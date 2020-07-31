@@ -5,5 +5,15 @@
     <RootNamespace>HospiTec_Server</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="Controllers\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FastReport.OpenSource" Version="2020.3.14" />
+    <PackageReference Include="FastReport.OpenSource.Data.MongoDB" Version="2020.3.14" />
+    <PackageReference Include="FastReport.OpenSource.Web" Version="2020.3.14" />
+  </ItemGroup>
+
 
 </Project>
