@@ -62,7 +62,7 @@ CREATE TABLE doctor.Medical_Room (
   ID_Room INT CHECK ( ID_Room > 0 ),
   Floor_Number SMALLINT NOT NULL,
   Name VARCHAR(100) NOT NULL,
-  Capacity SMALLINT NOT NULL CHECK ( Capacity > 0 ),
+  Capacity SMALLINT NOT NULL CHECK ( Capacity >= 0 ),
   Care_Type VARCHAR(50) NOT NULL,
   PRIMARY KEY (ID_Room)
 );
@@ -95,7 +95,7 @@ CREATE TABLE doctor.Clinic_Record (
 
 CREATE TABLE doctor.Medical_Equipment (
   Name VARCHAR(50),
-  Stock INT NOT NULL CHECK ( Stock > 0 ),
+  Stock INT NOT NULL CHECK ( Stock >= 0 ),
   Provider VARCHAR(50) NOT NULL,
   PRIMARY KEY (Name)
 );
@@ -119,3 +119,23 @@ CREATE TABLE doctor.Medical_Procedure_Record(
   FOREIGN KEY (Procedure_Name) REFERENCES doctor.Medical_Procedures(Name)
 );
 
+INSERT INTO doctor.medical_equipment(name, stock, provider)
+VALUES
+       ('luces quirurgicas', 0, 'Empresa A'),
+       ('ultrasonidos', 0, 'Empresa A'),
+       ('esterilizadores', 0, 'Empresa A'),
+       ('desfibriladores', 0, 'Empresa A'),
+       ('monitores', 0, 'Empresa A'),
+       ('respiradores artificiales', 0, 'Empresa A'),
+       ('electrocardiografos', 0, 'Empresa A');
+
+INSERT INTO doctor.medical_procedures(name, recovering_days)
+VALUES
+       ('apendicetomia', 28),
+       ('biopsa de mama', 14),
+       ('cirugia de cataratas', 10),
+       ('cesarea', 20),
+       ('histerectomia', 40),
+       ('cirugia para lumbagia', 50),
+       ('mastectomia', 30),
+       ('amigdalectomia', 22);
