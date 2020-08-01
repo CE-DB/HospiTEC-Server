@@ -1,8 +1,10 @@
-CREATE DATABASE HospitalTEC;
+CREATE DATABASE hospitec;
 
 CREATE USER hospitec WITH ENCRYPTED PASSWORD '3H_=Tps!22VdrS2G';
 
-GRANT CONNECT ON DATABASE HospitalTEC TO hospitec;
+GRANT hospitec TO dbmaster;
+
+GRANT CONNECT ON DATABASE hospitec TO hospitec;
 
 CREATE SCHEMA doctor AUTHORIZATION hospitec;
 CREATE SCHEMA admin AUTHORIZATION hospitec;
@@ -51,8 +53,8 @@ CREATE TABLE doctor.Medical_Procedures (
 );
 
 CREATE TABLE admin.Reservation (
-  Identification VARCHAR(12) NOT NULL,
-  Check_In_Date DATE NOT NULL,
+  Identification VARCHAR(12),
+  Check_In_Date DATE,
   Check_Out_Date DATE /*Store Procedure*/,
   PRIMARY KEY(Identification, Check_In_Date),
   FOREIGN KEY (Identification) REFERENCES admin.Patient (Identification)
@@ -76,12 +78,12 @@ CREATE TABLE doctor.Bed (
 );
 
 CREATE TABLE admin.Reservation_Bed (
-  Identification VARCHAR(12) NOT NULL,
-  ID_Bed INT NOT NULL,
-  Check_In_Date DATE NOT NULL,
+  Identification VARCHAR(12),
+  ID_Bed INT,
+  Check_In_Date DATE,
   PRIMARY KEY (Identification, ID_Bed, Check_In_Date),
   FOREIGN KEY (ID_Bed) REFERENCES doctor.Bed (ID_Bed),
-  FOREIGN KEY (Check_In_Date, Identification) REFERENCES admin.Reservation (Check_In_Date, Identification)
+  FOREIGN KEY (Identification, Check_In_Date) REFERENCES admin.Reservation (Identification, Check_In_Date)
 );
 
 CREATE TABLE doctor.Clinic_Record (
@@ -89,7 +91,7 @@ CREATE TABLE doctor.Clinic_Record (
   Pathology_Name VARCHAR(100),
   Diagnostic_Date DATE,
   Treatment VARCHAR(1000),
-  PRIMARY KEY(Identification, Pathology_Name, Diagnostic_Date),
+  PRIMARY KEY (Identification, Pathology_Name, Diagnostic_Date),
   FOREIGN KEY (Identification) REFERENCES admin.Patient(Identification)
 );
 
@@ -111,23 +113,23 @@ CREATE TABLE doctor.Medical_Equipment_Bed (
 CREATE TABLE doctor.Medical_Procedure_Record(
   Identification varchar(12),
   Pathology_Name VARCHAR(100),
-  Procedure_Name VARCHAR(50),
   Diagnostic_Date DATE,
+  Procedure_Name VARCHAR(50),
   Operation_Execution_Date DATE NOT NULL,
-  PRIMARY KEY(Identification, Pathology_Name, Procedure_Name, Diagnostic_Date),
-  FOREIGN KEY (Pathology_Name, Diagnostic_Date, Identification) REFERENCES doctor.Clinic_Record(Pathology_Name, Diagnostic_Date, Identification),
-  FOREIGN KEY (Procedure_Name) REFERENCES doctor.Medical_Procedures(Name)
+  PRIMARY KEY (Identification, Pathology_Name, Procedure_Name, Diagnostic_Date),
+  FOREIGN KEY (Identification, Pathology_Name, Diagnostic_Date) REFERENCES doctor.Clinic_Record (Identification, Pathology_Name, Diagnostic_Date),
+  FOREIGN KEY (Procedure_Name) REFERENCES doctor.Medical_Procedures (Name)
 );
 
 INSERT INTO doctor.medical_equipment(name, stock, provider)
 VALUES
-       ('luces quirurgicas', 0, 'Empresa A'),
-       ('ultrasonidos', 0, 'Empresa A'),
-       ('esterilizadores', 0, 'Empresa A'),
-       ('desfibriladores', 0, 'Empresa A'),
-       ('monitores', 0, 'Empresa A'),
-       ('respiradores artificiales', 0, 'Empresa A'),
-       ('electrocardiografos', 0, 'Empresa A');
+       ('luces quirurgicas', 76, 'Empresa A'),
+       ('ultrasonidos', 34, 'Empresa A'),
+       ('esterilizadores', 65, 'Empresa A'),
+       ('desfibriladores', 2, 'Empresa A'),
+       ('monitores', 98, 'Empresa A'),
+       ('respiradores artificiales', 76, 'Empresa A'),
+       ('electrocardiografos', 23, 'Empresa A');
 
 INSERT INTO doctor.medical_procedures(name, recovering_days)
 VALUES
