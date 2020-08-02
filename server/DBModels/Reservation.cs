@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace HospiTec_Server.DBModels
 {
-    public partial class Reservation
+    public  class Reservation
     {
         public Reservation()
         {
@@ -14,7 +14,7 @@ namespace HospiTec_Server.DBModels
         public DateTime CheckInDate { get; set; }
         public DateTime? CheckOutDate { get; set; }
 
-        public virtual Patient IdentificationNavigation { get; set; }
-        public virtual ICollection<ReservationBed> ReservationBed { get; set; }
+        public  Patient IdentificationNavigation { get; set; }
+        public  ICollection<ReservationBed> ReservationBed { get; set; }
     }
 }

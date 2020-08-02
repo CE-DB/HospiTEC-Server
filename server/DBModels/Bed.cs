@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace HospiTec_Server.DBModels
 {
-    public partial class Bed
+    public  class Bed
     {
         public Bed()
         {
@@ -15,8 +15,8 @@ namespace HospiTec_Server.DBModels
         public bool IsIcu { get; set; }
         public int IdRoom { get; set; }
 
-        public virtual MedicalRoom IdRoomNavigation { get; set; }
-        public virtual ICollection<MedicalEquipmentBed> MedicalEquipmentBed { get; set; }
-        public virtual ICollection<ReservationBed> ReservationBed { get; set; }
+        public  MedicalRoom IdRoomNavigation { get; set; }
+        public  ICollection<MedicalEquipmentBed> MedicalEquipmentBed { get; set; }
+        public  ICollection<ReservationBed> ReservationBed { get; set; }
     }
 }

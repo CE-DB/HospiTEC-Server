@@ -96,18 +96,19 @@ CREATE TABLE doctor.Clinic_Record (
 );
 
 CREATE TABLE doctor.Medical_Equipment (
-  Name VARCHAR(50),
+  Serial_Number VARCHAR(50),
+  Name VARCHAR(50) NOT NULL,
   Stock INT NOT NULL CHECK ( Stock >= 0 ),
   Provider VARCHAR(50) NOT NULL,
-  PRIMARY KEY (Name)
+  PRIMARY KEY (Serial_Number)
 );
 
 CREATE TABLE doctor.Medical_Equipment_Bed (
   ID_Bed INT,
-  Name VARCHAR(50) NOT NULL,
-  PRIMARY KEY (ID_Bed, Name),
+  Serial_Number VARCHAR(50) NOT NULL,
+  PRIMARY KEY (ID_Bed, Serial_Number),
   FOREIGN KEY (ID_Bed) REFERENCES doctor.Bed (ID_Bed),
-  FOREIGN KEY (Name) REFERENCES doctor.Medical_Equipment (Name)
+  FOREIGN KEY (Serial_Number) REFERENCES doctor.Medical_Equipment (Serial_Number)
 );
 
 CREATE TABLE doctor.Medical_Procedure_Record(
@@ -115,21 +116,131 @@ CREATE TABLE doctor.Medical_Procedure_Record(
   Pathology_Name VARCHAR(100),
   Diagnostic_Date DATE,
   Procedure_Name VARCHAR(50),
-  Operation_Execution_Date DATE NOT NULL,
-  PRIMARY KEY (Identification, Pathology_Name, Procedure_Name, Diagnostic_Date),
+  Operation_Execution_Date DATE,
+  PRIMARY KEY (Identification, Pathology_Name, Procedure_Name, Diagnostic_Date, Operation_Execution_Date),
   FOREIGN KEY (Identification, Pathology_Name, Diagnostic_Date) REFERENCES doctor.Clinic_Record (Identification, Pathology_Name, Diagnostic_Date),
   FOREIGN KEY (Procedure_Name) REFERENCES doctor.Medical_Procedures (Name)
 );
 
-INSERT INTO doctor.medical_equipment(name, stock, provider)
+CREATE TABLE doctor.Medical_Procedure_Reservation (
+  Identification VARCHAR(12),
+  Check_In_Date DATE,
+  Name VARCHAR(50),
+  PRIMARY KEY (Identification, Check_In_Date, Name),
+  FOREIGN KEY (Identification, Check_In_Date) REFERENCES admin.reservation (Identification, Check_In_Date),
+  FOREIGN KEY (Name) REFERENCES doctor.medical_procedures (Name)
+);
+
+CREATE OR REPLACE FUNCTION delete_record_procedures()
+    RETURNS TRIGGER
+    LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF EXISTS(SELECT *
+                FROM doctor.medical_procedure_record AS d
+                WHERE d.Identification = OLD.Identification
+                AND d.Diagnostic_Date = OLD.Diagnostic_Date
+                AND d.Pathology_Name = OLD.Pathology_Name)
+    THEN
+
+        DELETE FROM doctor.medical_procedure_record
+        WHERE Identification = OLD.Identification
+        AND Diagnostic_Date = OLD.Diagnostic_Date
+        AND Pathology_Name = OLD.Pathology_Name;
+    end if;
+
+    RETURN OLD;
+END
+$$;
+
+CREATE TRIGGER record_procedures_deleter
+    BEFORE DELETE
+    ON doctor.clinic_record
+    FOR EACH ROW
+    EXECUTE PROCEDURE delete_record_procedures();
+
+CREATE OR REPLACE FUNCTION delete_beds_procedures_reserved()
+    RETURNS TRIGGER
+    LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF EXISTS(SELECT *
+                FROM admin.reservation_bed AS d
+                WHERE d.Identification = OLD.Identification
+                AND d.check_in_date = OLD.check_in_date)
+    THEN
+
+        DELETE FROM admin.reservation_bed
+        WHERE Identification = OLD.Identification
+        AND check_in_date = OLD.check_in_date;
+    end if;
+
+    IF EXISTS(SELECT *
+                FROM doctor.Medical_Procedure_Reservation AS d
+                WHERE d.Identification = OLD.Identification
+                AND d.check_in_date = OLD.check_in_date)
+    THEN
+        DELETE FROM doctor.Medical_Procedure_Reservation
+        WHERE Identification = OLD.Identification
+        AND check_in_date = OLD.check_in_date;
+    end if;
+
+    RETURN OLD;
+END
+$$;
+
+CREATE TRIGGER bed_procedure_reserved_deleter
+    BEFORE DELETE
+    ON admin.reservation
+    FOR EACH ROW
+    EXECUTE PROCEDURE delete_beds_procedures_reserved();
+
+
+CREATE OR REPLACE FUNCTION delete_patients_records_reservation()
+    RETURNS TRIGGER
+    LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF EXISTS(SELECT *
+                FROM doctor.clinic_record AS d
+                WHERE d.Identification = OLD.Identification)
+    THEN
+
+        DELETE FROM doctor.clinic_record
+        WHERE Identification = OLD.Identification;
+    end if;
+
+    IF EXISTS(SELECT *
+                FROM admin.reservation AS d
+                WHERE d.Identification = OLD.Identification)
+    THEN
+
+        DELETE FROM admin.reservation
+        WHERE Identification = OLD.Identification;
+    end if;
+
+    RETURN OLD;
+END
+$$;
+
+CREATE TRIGGER patients_deleter
+    BEFORE DELETE
+    ON admin.patient
+    FOR EACH ROW
+    EXECUTE PROCEDURE delete_patients_records_reservation();
+
+INSERT INTO doctor.medical_equipment(serial_number, name, stock, provider)
 VALUES
-       ('luces quirurgicas', 76, 'Empresa A'),
-       ('ultrasonidos', 34, 'Empresa A'),
-       ('esterilizadores', 65, 'Empresa A'),
-       ('desfibriladores', 2, 'Empresa A'),
-       ('monitores', 98, 'Empresa A'),
-       ('respiradores artificiales', 76, 'Empresa A'),
-       ('electrocardiografos', 23, 'Empresa A');
+       ('10', 'luces quirurgicas', 76, 'Empresa A'),
+       ('20', 'ultrasonidos', 34, 'Empresa B'),
+       ('30', 'esterilizadores', 65, 'Empresa C'),
+       ('40', 'desfibriladores', 2, 'Empresa A'),
+       ('50', 'monitores', 98, 'Empresa B'),
+       ('60', 'respiradores artificiales', 76, 'Empresa C'),
+       ('70', 'electrocardiografos', 23, 'Empresa A');
 
 INSERT INTO doctor.medical_procedures(name, recovering_days)
 VALUES

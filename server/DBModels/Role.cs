@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace HospiTec_Server.DBModels
 {
-    public partial class Role
+    public  class Role
     {
         public Role()
         {
@@ -12,6 +12,6 @@ namespace HospiTec_Server.DBModels
 
         public string Name { get; set; }
 
-        public virtual ICollection<Staff> Staff { get; set; }
+        public  ICollection<Staff> Staff { get; set; }
     }
 }

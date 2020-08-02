@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace HospiTec_Server.DBModels
 {
-    public partial class hospitecContext : DbContext
+    public  class hospitecContext : DbContext
     {
         public hospitecContext()
         {
@@ -15,19 +15,19 @@ namespace HospiTec_Server.DBModels
         {
         }
 
-        public virtual DbSet<Bed> Bed { get; set; }
-        public virtual DbSet<ClinicRecord> ClinicRecord { get; set; }
-        public virtual DbSet<MedicalEquipment> MedicalEquipment { get; set; }
-        public virtual DbSet<MedicalEquipmentBed> MedicalEquipmentBed { get; set; }
-        public virtual DbSet<MedicalProcedureRecord> MedicalProcedureRecord { get; set; }
-        public virtual DbSet<MedicalProcedures> MedicalProcedures { get; set; }
-        public virtual DbSet<MedicalRoom> MedicalRoom { get; set; }
-        public virtual DbSet<Patient> Patient { get; set; }
-        public virtual DbSet<Person> Person { get; set; }
-        public virtual DbSet<Reservation> Reservation { get; set; }
-        public virtual DbSet<ReservationBed> ReservationBed { get; set; }
-        public virtual DbSet<Role> Role { get; set; }
-        public virtual DbSet<Staff> Staff { get; set; }
+        public  DbSet<Bed> Bed { get; set; }
+        public  DbSet<ClinicRecord> ClinicRecord { get; set; }
+        public  DbSet<MedicalEquipment> MedicalEquipment { get; set; }
+        public  DbSet<MedicalEquipmentBed> MedicalEquipmentBed { get; set; }
+        public  DbSet<MedicalProcedureRecord> MedicalProcedureRecord { get; set; }
+        public  DbSet<MedicalProcedures> MedicalProcedures { get; set; }
+        public  DbSet<MedicalRoom> MedicalRoom { get; set; }
+        public  DbSet<Patient> Patient { get; set; }
+        public  DbSet<Person> Person { get; set; }
+        public  DbSet<Reservation> Reservation { get; set; }
+        public  DbSet<ReservationBed> ReservationBed { get; set; }
+        public  DbSet<Role> Role { get; set; }
+        public  DbSet<Staff> Staff { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -376,9 +376,7 @@ namespace HospiTec_Server.DBModels
                     .HasConstraintName("staff_name_fkey");
             });
 
-            OnModelCreatingPartial(modelBuilder);
+            OnModelCreating(modelBuilder);
         }
-
-        partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
     }
 }

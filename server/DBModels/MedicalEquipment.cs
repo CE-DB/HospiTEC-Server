@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace HospiTec_Server.DBModels
 {
-    public partial class MedicalEquipment
+    public  class MedicalEquipment
     {
         public MedicalEquipment()
         {
@@ -14,6 +14,6 @@ namespace HospiTec_Server.DBModels
         public int Stock { get; set; }
         public string Provider { get; set; }
 
-        public virtual ICollection<MedicalEquipmentBed> MedicalEquipmentBed { get; set; }
+        public  ICollection<MedicalEquipmentBed> MedicalEquipmentBed { get; set; }
     }
 }
