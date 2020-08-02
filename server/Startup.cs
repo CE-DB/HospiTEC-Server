@@ -1,18 +1,16 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
-
+using HospiTec_Server.DBModels;
+using Microsoft.EntityFrameworkCore;
+using HotChocolate;
+using System;
+using HotChocolate.Types;
+using HotChocolate.AspNetCore;
+using HospiTec_Server.Logic.Graphql;
 
 namespace HospiTec_Server
 {
@@ -29,6 +27,22 @@ namespace HospiTec_Server
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+
+            services
+              .AddDbContext<hospitecContext>(options =>
+                options.UseNpgsql(Configuration.GetConnectionString("postgresql")));
+
+            services
+                .AddDataLoaderRegistry()
+                .AddGraphQL(SchemaBuilder
+                    .New()
+                    .BindClrType<DateTime, DateType>()
+                    // Here, we add the LocationQueryType as a QueryType
+                    .AddQueryType<Query>()
+                    //.AddMutationType<Mutation>()
+                    .AddAuthorizeDirectiveType()
+                    .Create());
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -48,6 +62,12 @@ namespace HospiTec_Server
             //app.UseHttpsRedirection();
 
             app.UseRouting();
+
+            app.UseWebSockets();
+            app.UseGraphQLHttpPost(new HttpPostMiddlewareOptions { Path = "/graphql" });
+            //app.UseGraphQLHttpGetSchema(new HttpGetSchemaMiddlewareOptions { Path = "/graphql/schema" });
+            app.UseGraphQL();
+            app.UsePlayground();
 
             //app.UseAuthorization();
 

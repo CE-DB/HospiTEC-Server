@@ -7,6 +7,7 @@ namespace HospiTec_Server.DBModels
     {
         public Reservation()
         {
+            MedicalProcedureReservation = new HashSet<MedicalProcedureReservation>();
             ReservationBed = new HashSet<ReservationBed>();
         }
 
@@ -15,6 +16,7 @@ namespace HospiTec_Server.DBModels
         public DateTime? CheckOutDate { get; set; }
 
         public  Patient IdentificationNavigation { get; set; }
+        public  ICollection<MedicalProcedureReservation> MedicalProcedureReservation { get; set; }
         public  ICollection<ReservationBed> ReservationBed { get; set; }
     }
 }

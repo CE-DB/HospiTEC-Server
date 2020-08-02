@@ -20,6 +20,7 @@ namespace HospiTec_Server.DBModels
         public  DbSet<MedicalEquipment> MedicalEquipment { get; set; }
         public  DbSet<MedicalEquipmentBed> MedicalEquipmentBed { get; set; }
         public  DbSet<MedicalProcedureRecord> MedicalProcedureRecord { get; set; }
+        public  DbSet<MedicalProcedureReservation> MedicalProcedureReservation { get; set; }
         public  DbSet<MedicalProcedures> MedicalProcedures { get; set; }
         public  DbSet<MedicalRoom> MedicalRoom { get; set; }
         public  DbSet<Patient> Patient { get; set; }
@@ -49,7 +50,6 @@ namespace HospiTec_Server.DBModels
                 entity.HasOne(d => d.IdRoomNavigation)
                     .WithMany(p => p.Bed)
                     .HasForeignKey(d => d.IdRoom)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("bed_id_room_fkey");
             });
 
@@ -85,12 +85,17 @@ namespace HospiTec_Server.DBModels
 
             modelBuilder.Entity<MedicalEquipment>(entity =>
             {
-                entity.HasKey(e => e.Name)
-                    .HasName("medical_equipment_pkey");
+                entity.HasKey(e => e.SerialNumber)
+                    .HasName("medical_equipment_pk");
 
                 entity.ToTable("medical_equipment", "doctor");
 
+                entity.Property(e => e.SerialNumber)
+                    .HasColumnName("serial_number")
+                    .HasMaxLength(50);
+
                 entity.Property(e => e.Name)
+                    .IsRequired()
                     .HasColumnName("name")
                     .HasMaxLength(50);
 
@@ -104,15 +109,15 @@ namespace HospiTec_Server.DBModels
 
             modelBuilder.Entity<MedicalEquipmentBed>(entity =>
             {
-                entity.HasKey(e => new { e.IdBed, e.Name })
+                entity.HasKey(e => new { e.IdBed, e.SerialNumber })
                     .HasName("medical_equipment_bed_pkey");
 
                 entity.ToTable("medical_equipment_bed", "doctor");
 
                 entity.Property(e => e.IdBed).HasColumnName("id_bed");
 
-                entity.Property(e => e.Name)
-                    .HasColumnName("name")
+                entity.Property(e => e.SerialNumber)
+                    .HasColumnName("serial_number")
                     .HasMaxLength(50);
 
                 entity.HasOne(d => d.IdBedNavigation)
@@ -121,16 +126,16 @@ namespace HospiTec_Server.DBModels
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("medical_equipment_bed_id_bed_fkey");
 
-                entity.HasOne(d => d.NameNavigation)
+                entity.HasOne(d => d.SerialNumberNavigation)
                     .WithMany(p => p.MedicalEquipmentBed)
-                    .HasForeignKey(d => d.Name)
+                    .HasForeignKey(d => d.SerialNumber)
                     .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("medical_equipment_bed_name_fkey");
+                    .HasConstraintName("medical_equipment_bed_serial_number_fkey");
             });
 
             modelBuilder.Entity<MedicalProcedureRecord>(entity =>
             {
-                entity.HasKey(e => new { e.Identification, e.PathologyName, e.ProcedureName, e.DiagnosticDate })
+                entity.HasKey(e => new { e.Identification, e.PathologyName, e.ProcedureName, e.DiagnosticDate, e.OperationExecutionDate })
                     .HasName("medical_procedure_record_pkey");
 
                 entity.ToTable("medical_procedure_record", "doctor");
@@ -166,6 +171,38 @@ namespace HospiTec_Server.DBModels
                     .HasForeignKey(d => new { d.Identification, d.PathologyName, d.DiagnosticDate })
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("medical_procedure_record_identification_pathology_name_dia_fkey");
+            });
+
+            modelBuilder.Entity<MedicalProcedureReservation>(entity =>
+            {
+                entity.HasKey(e => new { e.Identification, e.CheckInDate, e.Name })
+                    .HasName("medical_procedure_reservation_pkey");
+
+                entity.ToTable("medical_procedure_reservation", "doctor");
+
+                entity.Property(e => e.Identification)
+                    .HasColumnName("identification")
+                    .HasMaxLength(12);
+
+                entity.Property(e => e.CheckInDate)
+                    .HasColumnName("check_in_date")
+                    .HasColumnType("date");
+
+                entity.Property(e => e.Name)
+                    .HasColumnName("name")
+                    .HasMaxLength(50);
+
+                entity.HasOne(d => d.NameNavigation)
+                    .WithMany(p => p.MedicalProcedureReservation)
+                    .HasForeignKey(d => d.Name)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("medical_procedure_reservation_name_fkey");
+
+                entity.HasOne(d => d.Reservation)
+                    .WithMany(p => p.MedicalProcedureReservation)
+                    .HasForeignKey(d => new { d.Identification, d.CheckInDate })
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("medical_procedure_reservation_identification_check_in_date_fkey");
             });
 
             modelBuilder.Entity<MedicalProcedures>(entity =>
