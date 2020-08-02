@@ -63,7 +63,7 @@ namespace HospiTec_Server
 
             app.UseRouting();
 
-            //app.UseWebSockets();
+            app.UseWebSockets();
             app.UseGraphQLHttpPost(new HttpPostMiddlewareOptions { Path = "/graphql" });
             //app.UseGraphQLHttpGetSchema(new HttpGetSchemaMiddlewareOptions { Path = "/graphql/schema" });
             app.UseGraphQL();
