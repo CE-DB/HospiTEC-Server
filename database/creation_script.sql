@@ -160,77 +160,108 @@ CREATE TRIGGER record_procedures_deleter
     FOR EACH ROW
     EXECUTE PROCEDURE delete_record_procedures();
 
-CREATE OR REPLACE FUNCTION delete_beds_procedures_reserved()
-    RETURNS TRIGGER
+CREATE OR REPLACE PROCEDURE delete_beds_procedures_reserved(
+    patientId varchar(12),
+    checkInDate Date = null
+)
     LANGUAGE plpgsql
 AS $$
 BEGIN
 
-    IF EXISTS(SELECT *
+    IF patientId IS NULL
+
+    then
+        RAISE EXCEPTION 'Patient id is null'
+      USING HINT = 'You must provide a valid patient id';
+
+    end if;
+
+    IF checkInDate IS NULL
+
+    THEN
+
+        IF EXISTS(SELECT *
                 FROM admin.reservation_bed AS d
-                WHERE d.Identification = OLD.Identification
-                AND d.check_in_date = OLD.check_in_date)
-    THEN
+                WHERE d.Identification = patientId)
+        THEN
 
-        DELETE FROM admin.reservation_bed
-        WHERE Identification = OLD.Identification
-        AND check_in_date = OLD.check_in_date;
+            DELETE FROM admin.reservation_bed
+            WHERE Identification = patientId;
+        end if;
+
+        IF EXISTS(SELECT *
+                    FROM doctor.Medical_Procedure_Reservation AS d
+                    WHERE Identification = patientId)
+        THEN
+            DELETE FROM doctor.Medical_Procedure_Reservation
+            WHERE Identification = patientId;
+        end if;
+
+        DELETE FROM admin.reservation
+        WHERE Identification = patientId;
+
+    else
+
+        IF EXISTS(SELECT *
+                FROM admin.reservation_bed AS d
+                WHERE d.Identification = patientId
+                AND d.check_in_date = checkInDate)
+        THEN
+
+            DELETE FROM admin.reservation_bed
+            WHERE Identification = patientId
+            AND check_in_date = checkInDate;
+        end if;
+
+        IF EXISTS(SELECT *
+                    FROM doctor.Medical_Procedure_Reservation AS d
+                    WHERE Identification = patientId
+                    AND check_in_date = checkInDate)
+        THEN
+            DELETE FROM doctor.Medical_Procedure_Reservation
+            WHERE Identification = patientId
+            AND check_in_date = checkInDate;
+        end if;
+
+        DELETE FROM admin.reservation
+        WHERE Identification = patientId
+        AND check_in_date = checkInDate;
+
     end if;
-
-    IF EXISTS(SELECT *
-                FROM doctor.Medical_Procedure_Reservation AS d
-                WHERE d.Identification = OLD.Identification
-                AND d.check_in_date = OLD.check_in_date)
-    THEN
-        DELETE FROM doctor.Medical_Procedure_Reservation
-        WHERE Identification = OLD.Identification
-        AND check_in_date = OLD.check_in_date;
-    end if;
-
-    RETURN OLD;
 END
 $$;
 
-CREATE TRIGGER bed_procedure_reserved_deleter
-    BEFORE DELETE
-    ON admin.reservation
-    FOR EACH ROW
-    EXECUTE PROCEDURE delete_beds_procedures_reserved();
 
-
-CREATE OR REPLACE FUNCTION delete_patients_records_reservation()
-    RETURNS TRIGGER
+CREATE OR REPLACE PROCEDURE delete_patients_records_reservation(
+    patientId varchar(12)
+)
     LANGUAGE plpgsql
 AS $$
 BEGIN
 
     IF EXISTS(SELECT *
                 FROM doctor.clinic_record AS d
-                WHERE d.Identification = OLD.Identification)
+                WHERE d.Identification = patientId)
     THEN
 
         DELETE FROM doctor.clinic_record
-        WHERE Identification = OLD.Identification;
+        WHERE Identification = patientId;
     end if;
 
     IF EXISTS(SELECT *
                 FROM admin.reservation AS d
-                WHERE d.Identification = OLD.Identification)
+                WHERE d.Identification = patientId)
     THEN
 
-        DELETE FROM admin.reservation
-        WHERE Identification = OLD.Identification;
+        CALL delete_beds_procedures_reserved(patientId);
+
     end if;
 
-    RETURN OLD;
+    DELETE FROM admin.patient
+    WHERE identification = patientId;
+
 END
 $$;
-
-CREATE TRIGGER patients_deleter
-    BEFORE DELETE
-    ON admin.patient
-    FOR EACH ROW
-    EXECUTE PROCEDURE delete_patients_records_reservation();
 
 INSERT INTO doctor.medical_equipment(serial_number, name, stock, provider)
 VALUES

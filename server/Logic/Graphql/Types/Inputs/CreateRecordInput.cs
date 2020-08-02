@@ -1,0 +1,19 @@
+﻿using HotChocolate;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace HospiTec_Server.Logic.Graphql.Types.Inputs
+{
+    public class CreateRecordInput
+    {
+        [GraphQLNonNullType]
+        public string patientId { get; set; }
+        [GraphQLNonNullType]
+        public string pathologyName { get; set; }
+        [GraphQLNonNullType]
+        public DateTime diagnosticDate { get; set; }
+        public string treatment { get; set; } = null;
+    }
+}
