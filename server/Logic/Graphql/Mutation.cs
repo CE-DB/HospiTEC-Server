@@ -10,6 +10,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
+using HotChocolate.AspNetCore.Authorization;
 
 namespace HospiTec_Server.Logic.Graphql
 {
@@ -158,6 +162,7 @@ namespace HospiTec_Server.Logic.Graphql
             return p;
         }
 
+        [Authorize(Policy = Constants.patientRole)]
         [GraphQLType(typeof(PersonType))]
         public async Task<Person> addPassword(
             [GraphQLNonNullType] string patientId,
@@ -805,6 +810,116 @@ namespace HospiTec_Server.Logic.Graphql
                 .Include(p => p.MedicalProcedureRecord)
                 .ThenInclude(q => q.ProcedureNameNavigation)
                 .FirstOrDefaultAsync();
+        }
+
+        public async Task<Auth> authentication(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] string id,
+            [GraphQLNonNullType] string password,
+            string role)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new QueryException(CustomErrorBuilder(
+                    "VALUE_EMPTY",
+                    "You must provide a user."));
+            }
+
+            if (string.IsNullOrEmpty(password))
+            {
+                throw new QueryException(CustomErrorBuilder(
+                    "VALUE_EMPTY",
+                    "You must provide a password."));
+            }
+
+            var dbpatient = await db.Patient.Where(s => s.Identification.Equals(id) && s.PatientPassword.Equals(password)).FirstOrDefaultAsync();
+
+            if (role.Equals(Constants.patientRole))
+            {
+                var dbStaff = await db.Patient.Where(s => s.Identification.Equals(id) && s.PatientPassword.Equals(password)).FirstOrDefaultAsync();
+
+                if (dbStaff is null)
+                {
+                    throw new QueryException(CustomErrorBuilder(
+                        "UNAUTHORIZED",
+                        "The user or password provided are not correct"));
+                }
+
+                var claims = new[]
+                {
+                new Claim(JwtRegisteredClaimNames.Sub, dbStaff.Identification),
+                new Claim(Constants.RoleClaim, Constants.patientRole),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
+
+                var key = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(Constants.key));
+
+
+                var signingCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+                JwtSecurityToken token;
+
+                token = new JwtSecurityToken(
+                    issuer: Constants.Issuer,
+                    claims: claims,
+                    notBefore: DateTime.Now,
+                    expires: DateTime.Now.AddHours(8),
+                    signingCredentials: signingCredentials);
+
+
+                var tokenR = new JwtSecurityTokenHandler().WriteToken(token);
+
+                return new Auth
+                {
+                    accessKey = tokenR,
+                    role = Constants.patientRole
+                };
+            }
+            else
+            {
+                var dbStaff = await db.Staff.Where(s => s.Identification.Equals(id) && s.StaffPassword.Equals(password)).FirstOrDefaultAsync();
+
+                if (dbStaff is null)
+                {
+                    throw new QueryException(CustomErrorBuilder(
+                        "UNAUTHORIZED",
+                        "The user or password provided are not correct"));
+                }
+
+                var claims = new[]
+                {
+                new Claim(JwtRegisteredClaimNames.Sub, dbStaff.Identification),
+                new Claim(Constants.RoleClaim, dbStaff.Name),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
+
+                var key = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(Constants.key));
+
+
+                var signingCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+                JwtSecurityToken token;
+
+                token = new JwtSecurityToken(
+                    issuer: Constants.Issuer,
+                    claims: claims,
+                    notBefore: DateTime.Now,
+                    expires: DateTime.Now.AddHours(8),
+                    signingCredentials: signingCredentials);
+
+
+                var tokenR = new JwtSecurityTokenHandler().WriteToken(token);
+
+                return new Auth
+                {
+                    accessKey = tokenR,
+                    role = dbStaff.Name
+                };
+            }
+
+
         }
     }
 }

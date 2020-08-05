@@ -11,6 +11,9 @@ using System;
 using HotChocolate.Types;
 using HotChocolate.AspNetCore;
 using HospiTec_Server.Logic.Graphql;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace HospiTec_Server
 {
@@ -27,6 +30,59 @@ namespace HospiTec_Server
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(config =>
+                {
+                    var key = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(Constants.key));
+
+                    config.RequireHttpsMetadata = false;
+                    config.SaveToken = true;
+
+                    config.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = false,
+                        ValidateAudience = false,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+                        IssuerSigningKey = key,
+                        ClockSkew = TimeSpan.Zero
+                    };
+
+                    //config.SaveToken = true;
+                });
+
+            services.AddAuthorization(x =>
+            {
+                x.AddPolicy(Constants.adminRole, builder =>
+                    builder
+                        .RequireAuthenticatedUser()
+                        .RequireRole(Constants.adminRole)
+                        .Build()
+                );
+
+                x.AddPolicy(Constants.doctorRole, builder =>
+                    builder
+                        .RequireAuthenticatedUser()
+                        .RequireRole(Constants.doctorRole)
+                        .Build()
+                );
+
+                x.AddPolicy(Constants.nurseRole, builder =>
+                    builder
+                        .RequireAuthenticatedUser()
+                        .RequireRole(Constants.nurseRole)
+                        .Build()
+                );
+
+                x.AddPolicy(Constants.patientRole, builder =>
+                    builder
+                        .RequireAuthenticatedUser()
+                        .RequireRole(Constants.patientRole)
+                        .Build()
+                );
+            });
 
             services
               .AddDbContext<hospitecContext>(options =>
@@ -53,6 +109,9 @@ namespace HospiTec_Server
                 app.UseDeveloperExceptionPage();
             }
 
+            app.UseAuthentication();
+
+
             app.UseForwardedHeaders(new ForwardedHeadersOptions
             {
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
@@ -63,12 +122,12 @@ namespace HospiTec_Server
 
             app.UseRouting();
 
+            app.UseAuthorization();
+
             app.UseWebSockets();
             app.UseGraphQLHttpPost(new HttpPostMiddlewareOptions { Path = "/graphql" });
             app.UseGraphQL();
             app.UsePlayground();
-
-            //app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {

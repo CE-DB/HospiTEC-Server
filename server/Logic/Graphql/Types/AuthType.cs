@@ -2,16 +2,16 @@
 
 namespace HospiTec_Server.Logic.Graphql.Types
 {
-    public class AuthType : ObjectType
+    public class AuthType : ObjectType<Auth>
     {
-        protected override void Configure(IObjectTypeDescriptor descriptor)
+        protected override void Configure(IObjectTypeDescriptor<Auth> descriptor)
         {
             base.Configure(descriptor);
 
-            descriptor.Field("accessKey")
+            descriptor.Field(e =>e.accessKey)
                 .Type<NonNullType<StringType>>();
 
-            descriptor.Field("role")
+            descriptor.Field(e => e.role)
                 .Type<NonNullType<StringType>>();
         }
     }
