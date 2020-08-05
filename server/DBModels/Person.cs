@@ -5,6 +5,11 @@ namespace HospiTec_Server.DBModels
 {
     public  class Person
     {
+        public Person()
+        {
+            Staff = new HashSet<Staff>();
+        }
+
         public string Identification { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
@@ -15,5 +20,6 @@ namespace HospiTec_Server.DBModels
         public string ExactAddress { get; set; }
 
         public  Patient Patient { get; set; }
+        public  ICollection<Staff> Staff { get; set; }
     }
 }

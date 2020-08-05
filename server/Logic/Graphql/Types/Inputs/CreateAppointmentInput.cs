@@ -15,7 +15,9 @@ namespace HospiTec_Server.Logic.Graphql.Types.Inputs
         [GraphQLNonNullType]
         public string procedureName { get; set; }
         [GraphQLNonNullType]
-        public DateTime diagnosticDate { get; set; }
+        public DateTime? diagnosticDate { get; set; }
+        [GraphQLNonNullType]
+        public DateTime? executionDate { get; set; }
 
     }
 }

@@ -13,7 +13,7 @@ namespace HospiTec_Server.Logic.Graphql.Types.Inputs
         [GraphQLNonNullType]
         public string oldPathologyName { get; set; }
         [GraphQLNonNullType]
-        public DateTime oldDiagnosticDate { get; set; }
+        public DateTime? oldDiagnosticDate { get; set; }
         public string treatment { get; set; } = null;
         public string newPathologyName { get; set; } = null;
         public DateTime? newDiagnosticDate { get; set; } = null;

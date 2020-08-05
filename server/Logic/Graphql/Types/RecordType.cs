@@ -18,10 +18,11 @@ namespace HospiTec_Server.Logic.Graphql.Types
                 .Type<NonNullType<DateType>>();
 
             descriptor.Field(e => e.Treatment)
-                .Type<NonNullType<StringType>>();
+                .Type<StringType>();
 
             descriptor.Field(e => e.MedicalProcedureRecord)
-                .Type<ListType<AppointmentType>>();
+                .Name("Appointment")
+                .Type<ListType<NonNullType<AppointmentType>>>();
         }
     }
 }

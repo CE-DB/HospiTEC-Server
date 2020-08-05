@@ -50,6 +50,7 @@ namespace HospiTec_Server.DBModels
                 entity.HasOne(d => d.IdRoomNavigation)
                     .WithMany(p => p.Bed)
                     .HasForeignKey(d => d.IdRoom)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("bed_id_room_fkey");
             });
 
@@ -66,7 +67,7 @@ namespace HospiTec_Server.DBModels
 
                 entity.Property(e => e.PathologyName)
                     .HasColumnName("pathology_name")
-                    .HasMaxLength(100);
+                    .HasMaxLength(30);
 
                 entity.Property(e => e.DiagnosticDate)
                     .HasColumnName("diagnostic_date")
@@ -86,7 +87,7 @@ namespace HospiTec_Server.DBModels
             modelBuilder.Entity<MedicalEquipment>(entity =>
             {
                 entity.HasKey(e => e.SerialNumber)
-                    .HasName("medical_equipment_pk");
+                    .HasName("medical_equipment_pkey");
 
                 entity.ToTable("medical_equipment", "doctor");
 
@@ -146,7 +147,7 @@ namespace HospiTec_Server.DBModels
 
                 entity.Property(e => e.PathologyName)
                     .HasColumnName("pathology_name")
-                    .HasMaxLength(100);
+                    .HasMaxLength(30);
 
                 entity.Property(e => e.ProcedureName)
                     .HasColumnName("procedure_name")
@@ -406,14 +407,18 @@ namespace HospiTec_Server.DBModels
                     .HasColumnName("staff_password")
                     .HasMaxLength(100);
 
+                entity.HasOne(d => d.IdentificationNavigation)
+                    .WithMany(p => p.Staff)
+                    .HasForeignKey(d => d.Identification)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("staff_identification_fkey");
+
                 entity.HasOne(d => d.NameNavigation)
                     .WithMany(p => p.Staff)
                     .HasForeignKey(d => d.Name)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("staff_name_fkey");
             });
-
-            OnModelCreating(modelBuilder);
         }
     }
 }

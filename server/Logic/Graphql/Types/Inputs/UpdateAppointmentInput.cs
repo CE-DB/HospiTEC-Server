@@ -13,7 +13,7 @@ namespace HospiTec_Server.Logic.Graphql.Types.Inputs
         [GraphQLNonNullType]
         public string pathologyName { get; set; }
         [GraphQLNonNullType]
-        public DateTime diagnosticDate { get; set; }
+        public DateTime? diagnosticDate { get; set; }
         [GraphQLNonNullType(IsElementNullable = false, IsNullable = true)]
         public ICollection<ProcedureAppointmentInput> deletedProcedures { get; set; }
         [GraphQLNonNullType(IsElementNullable = false, IsNullable = true)]

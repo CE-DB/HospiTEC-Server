@@ -37,9 +37,9 @@ namespace HospiTec_Server
                 .AddGraphQL(SchemaBuilder
                     .New()
                     .BindClrType<DateTime, DateType>()
-                    // Here, we add the LocationQueryType as a QueryType
+                    // Here, we add the QueryType and MutationType
                     .AddQueryType<Query>()
-                    //.AddMutationType<Mutation>()
+                    .AddMutationType<Mutation>()
                     .AddAuthorizeDirectiveType()
                     .Create());
 

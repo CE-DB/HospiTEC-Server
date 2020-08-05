@@ -13,7 +13,7 @@ namespace HospiTec_Server.DBModels
 
         public int IdBed { get; set; }
         public bool IsIcu { get; set; }
-        public int? IdRoom { get; set; }
+        public int IdRoom { get; set; }
 
         public  MedicalRoom IdRoomNavigation { get; set; }
         public  ICollection<MedicalEquipmentBed> MedicalEquipmentBed { get; set; }

@@ -9,7 +9,8 @@ GRANT CONNECT ON DATABASE hospitec TO hospitec;
 CREATE SCHEMA doctor AUTHORIZATION hospitec;
 CREATE SCHEMA admin AUTHORIZATION hospitec;
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA doctor, admin TO hospitec;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA doctor TO hospitec;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA admin TO hospitec;
 
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA admin, doctor TO hospitec;
 
@@ -34,7 +35,7 @@ CREATE TABLE admin.Patient (
   Identification VARCHAR(12),
   Patient_Password VARCHAR(100) NOT NULL,
   PRIMARY KEY(Identification),
-  FOREIGN KEY (Identification) REFERENCES admin.Person(Identification)
+  FOREIGN KEY (Identification) REFERENCES admin.Person(Identification) ON UPDATE CASCADE
 );
 
 CREATE TABLE admin.Staff (
@@ -43,6 +44,7 @@ CREATE TABLE admin.Staff (
   Admission_Date Date NOT NULL,
   Staff_Password VARCHAR(100) NOT NULL,
   FOREIGN KEY (Name) REFERENCES admin.Role (Name),
+  FOREIGN KEY (Identification) REFERENCES admin.Person (Identification) ON UPDATE CASCADE,
   PRIMARY KEY (Name, Identification)
 );
 
@@ -57,7 +59,7 @@ CREATE TABLE admin.Reservation (
   Check_In_Date DATE,
   Check_Out_Date DATE /*Store Procedure*/,
   PRIMARY KEY(Identification, Check_In_Date),
-  FOREIGN KEY (Identification) REFERENCES admin.Patient (Identification)
+  FOREIGN KEY (Identification) REFERENCES admin.Patient (Identification) ON UPDATE CASCADE
 );
 
 CREATE TABLE doctor.Medical_Room (
@@ -83,16 +85,16 @@ CREATE TABLE admin.Reservation_Bed (
   Check_In_Date DATE,
   PRIMARY KEY (Identification, ID_Bed, Check_In_Date),
   FOREIGN KEY (ID_Bed) REFERENCES doctor.Bed (ID_Bed),
-  FOREIGN KEY (Identification, Check_In_Date) REFERENCES admin.Reservation (Identification, Check_In_Date)
+  FOREIGN KEY (Identification, Check_In_Date) REFERENCES admin.Reservation (Identification, Check_In_Date) ON UPDATE CASCADE
 );
 
 CREATE TABLE doctor.Clinic_Record (
   Identification VARCHAR(12),
-  Pathology_Name VARCHAR(100),
+  Pathology_Name VARCHAR(30),
   Diagnostic_Date DATE,
   Treatment VARCHAR(1000),
   PRIMARY KEY (Identification, Pathology_Name, Diagnostic_Date),
-  FOREIGN KEY (Identification) REFERENCES admin.Patient(Identification)
+  FOREIGN KEY (Identification) REFERENCES admin.Patient(Identification) ON UPDATE CASCADE
 );
 
 CREATE TABLE doctor.Medical_Equipment (
@@ -113,12 +115,12 @@ CREATE TABLE doctor.Medical_Equipment_Bed (
 
 CREATE TABLE doctor.Medical_Procedure_Record(
   Identification varchar(12),
-  Pathology_Name VARCHAR(100),
+  Pathology_Name VARCHAR(30),
   Diagnostic_Date DATE,
   Procedure_Name VARCHAR(50),
   Operation_Execution_Date DATE,
   PRIMARY KEY (Identification, Pathology_Name, Procedure_Name, Diagnostic_Date, Operation_Execution_Date),
-  FOREIGN KEY (Identification, Pathology_Name, Diagnostic_Date) REFERENCES doctor.Clinic_Record (Identification, Pathology_Name, Diagnostic_Date),
+  FOREIGN KEY (Identification, Pathology_Name, Diagnostic_Date) REFERENCES doctor.Clinic_Record (Identification, Pathology_Name, Diagnostic_Date) ON UPDATE CASCADE,
   FOREIGN KEY (Procedure_Name) REFERENCES doctor.Medical_Procedures (Name)
 );
 
@@ -127,7 +129,7 @@ CREATE TABLE doctor.Medical_Procedure_Reservation (
   Check_In_Date DATE,
   Name VARCHAR(50),
   PRIMARY KEY (Identification, Check_In_Date, Name),
-  FOREIGN KEY (Identification, Check_In_Date) REFERENCES admin.reservation (Identification, Check_In_Date),
+  FOREIGN KEY (Identification, Check_In_Date) REFERENCES admin.reservation (Identification, Check_In_Date) ON UPDATE CASCADE,
   FOREIGN KEY (Name) REFERENCES doctor.medical_procedures (Name)
 );
 
@@ -231,13 +233,20 @@ BEGIN
 END
 $$;
 
-
 CREATE OR REPLACE PROCEDURE delete_patients_records_reservation(
     patientId varchar(12)
 )
     LANGUAGE plpgsql
 AS $$
 BEGIN
+
+    IF patientId IS NULL
+
+    then
+        RAISE EXCEPTION 'Patient id is null'
+      USING HINT = 'You must provide a valid patient id';
+
+    end if;
 
     IF EXISTS(SELECT *
                 FROM doctor.clinic_record AS d
@@ -283,3 +292,5 @@ VALUES
        ('cirugia para lumbagia', 50),
        ('mastectomia', 30),
        ('amigdalectomia', 22);
+
+
