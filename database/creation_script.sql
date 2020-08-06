@@ -74,9 +74,9 @@ CREATE TABLE doctor.Medical_Room (
 CREATE TABLE doctor.Bed (
   ID_Bed INT CHECK ( ID_Bed > 0 ),
   Is_ICU BOOLEAN NOT NULL,
-  ID_Room INT NOT NULL,
+  ID_Room INT,
   PRIMARY KEY (ID_Bed),
-  FOREIGN KEY (ID_Room) REFERENCES doctor.Medical_Room (ID_Room)
+  FOREIGN KEY (ID_Room) REFERENCES doctor.Medical_Room (ID_Room) ON UPDATE CASCADE
 );
 
 CREATE TABLE admin.Reservation_Bed (
@@ -109,8 +109,8 @@ CREATE TABLE doctor.Medical_Equipment_Bed (
   ID_Bed INT,
   Serial_Number VARCHAR(50) NOT NULL,
   PRIMARY KEY (ID_Bed, Serial_Number),
-  FOREIGN KEY (ID_Bed) REFERENCES doctor.Bed (ID_Bed),
-  FOREIGN KEY (Serial_Number) REFERENCES doctor.Medical_Equipment (Serial_Number)
+  FOREIGN KEY (ID_Bed) REFERENCES doctor.Bed (ID_Bed) ON UPDATE CASCADE ON DELETE CASCADE,
+  FOREIGN KEY (Serial_Number) REFERENCES doctor.Medical_Equipment (Serial_Number) ON UPDATE CASCADE
 );
 
 CREATE TABLE doctor.Medical_Procedure_Record(
@@ -271,6 +271,30 @@ BEGIN
 
 END
 $$;
+
+CREATE OR REPLACE PROCEDURE DeleteMedicalRoom(id INT)
+LANGUAGE plpgsql
+AS $$
+
+BEGIN
+
+/*
+Updates ID_ROOM atribute in bed as NULL
+if it matches with @Id
+*/
+UPDATE doctor.Bed
+SET
+  ID_ROOM = NULL
+WHERE
+  ID_ROOM = id;
+
+/*
+Deletes Medical_ROOM with corresponding @Id
+*/
+DELETE FROM doctor.medical_room
+WHERE ID_ROOM = Id;
+
+END $$;
 
 INSERT INTO doctor.medical_equipment(serial_number, name, stock, provider)
 VALUES

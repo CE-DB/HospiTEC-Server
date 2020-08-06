@@ -6,6 +6,8 @@ namespace HospiTec_Server.Logic.Graphql.Types.Inputs
     public class CreateStaffInput
     {
         [GraphQLNonNullType]
+        public string id { get; set; }
+        [GraphQLNonNullType]
         public string role { get; set; }
         [GraphQLNonNullType]
         public string password { get; set; }

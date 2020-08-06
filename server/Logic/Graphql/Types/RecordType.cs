@@ -9,6 +9,8 @@ namespace HospiTec_Server.Logic.Graphql.Types
         {
             base.Configure(descriptor);
 
+            descriptor.Name("Record");
+
             descriptor.BindFieldsExplicitly();
 
             descriptor.Field(e => e.PathologyName)

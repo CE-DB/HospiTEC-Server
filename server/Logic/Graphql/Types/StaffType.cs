@@ -17,6 +17,7 @@ namespace HospiTec_Server.Logic.Graphql.Types
             descriptor.BindFieldsExplicitly();
 
             descriptor.Field(e => e.Name)
+                .Name("role")
                 .Type<StringType>();
 
             descriptor.Field(e => e.AdmissionDate)

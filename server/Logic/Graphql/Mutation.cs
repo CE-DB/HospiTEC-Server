@@ -593,7 +593,7 @@ namespace HospiTec_Server.Logic.Graphql
         [GraphQLType(typeof(RecordType))]
         public async Task<ClinicRecord> updateRecord(
             [Service] hospitecContext db,
-            [GraphQLNonNullType] UpdateRecordInput input)
+            [GraphQLNonNullType] UpdateRecordInput input)   
         {
             List<IError> errors = new List<IError>();
 
@@ -691,6 +691,85 @@ namespace HospiTec_Server.Logic.Graphql
         }
 
         [GraphQLType(typeof(RecordType))]
+        public async Task<ClinicRecord> deleteRecord(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] string patientId,
+            [GraphQLNonNullType] string pathologyName,
+            [GraphQLNonNullType] DateTime diagnosticDate)
+        {
+            List<IError> errors = new List<IError>();
+
+            if (string.IsNullOrEmpty(patientId))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_ID",
+                    "You must provide a valid ID."));
+            }
+
+            if (string.IsNullOrEmpty(pathologyName))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_PATHOLOGY_NAME",
+                    "You must provide a pathology name."));
+            }
+
+            if (diagnosticDate == null)
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_DIAGNOSTIC_DATE",
+                    "You must provide a diagnostic date."));
+            }
+
+            if (errors.Count > 0) throw new QueryException(errors);
+
+            ClinicRecord p = await db.ClinicRecord
+                .Include(p => p.MedicalProcedureRecord)
+                    .ThenInclude(p => p.ProcedureNameNavigation)
+                .FirstOrDefaultAsync(p => p.Identification.Equals(patientId)
+                                          && p.DiagnosticDate.Equals(diagnosticDate)
+                                          && p.PathologyName.Equals(pathologyName));
+
+            if (p is null)
+                throw new QueryException(CustomErrorBuilder(
+                    "NOT_FOUND",
+                    "Data provided doesn't match any clinic record."));
+
+            StringBuilder sql = new StringBuilder();
+
+            sql.Append("DELETE FROM doctor.clinic_record WHERE ");
+
+            sql.AppendLine(string.Format("identification = '{0}'", patientId));
+            sql.AppendLine(string.Format("AND pathology_name = '{0}'", pathologyName));
+            sql.AppendLine(string.Format("AND diagnostic_date = '{0}'", diagnosticDate));
+            try
+            {
+                await db.Database.ExecuteSqlRawAsync(sql.ToString());
+            }
+            catch (PostgresException pgException)
+            {
+                switch (pgException.SqlState)
+                {
+                    case "22001":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Some of values inserted are too long."));
+                    default:
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Unknown error"));
+                }
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            return p;
+        }
+
+        [GraphQLType(typeof(RecordType))]
         public async Task<ClinicRecord> updateAppointment(
             [Service] hospitecContext db,
             [GraphQLNonNullType] UpdateAppointmentInput input)
@@ -739,6 +818,11 @@ namespace HospiTec_Server.Logic.Graphql
                                     && f.ProcedureName.Equals(p.procedureName)
                                     && f.OperationExecutionDate.Equals(p.executionDate))
                         .FirstOrDefault();
+
+                    if (m is null)
+                    {
+                        continue;
+                    }
 
                     db.MedicalProcedureRecord.Remove(m);
                 }
@@ -918,8 +1002,1405 @@ namespace HospiTec_Server.Logic.Graphql
                     role = dbStaff.Name
                 };
             }
+        }
+
+        [GraphQLType(typeof(ProcedureType))]
+        public async Task<MedicalProcedures> createProcedure(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] string name,
+            [GraphQLNonNullType] short recoveringDays)
+        {
+            List<IError> errors = new List<IError>();
+
+            if (string.IsNullOrEmpty(name))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_ID",
+                    "You must provide a valid procedure name."));
+            }
+
+            if (errors.Count > 0) throw new QueryException(errors);
 
 
+            MedicalProcedures m = new MedicalProcedures
+            {
+                Name = name,
+                RecoveringDays = recoveringDays
+            };
+
+            try
+            {
+                db.MedicalProcedures.Add(m);
+                await db.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                if (ex.GetBaseException() is PostgresException pgException)
+                {
+                    switch (pgException.SqlState)
+                    {
+                        case "23505":
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "A procedure with provided data already exists."));
+
+                        case "22001":
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "Some of values inserted are too long."));
+
+                        case "23514":
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "You must insert valid days."));
+
+                        default:
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "Unknown error"));
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            return m;
+        }
+
+        [GraphQLType(typeof(ProcedureType))]
+        public async Task<MedicalProcedures> updateProcedure(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] string oldName,
+            string newName,
+            short? recoveringDays)
+        {
+            List<IError> errors = new List<IError>();
+
+            if (string.IsNullOrEmpty(oldName))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_ID",
+                    "You must provide a valid procedure name."));
+            }
+
+            if (string.IsNullOrEmpty(newName) && !recoveringDays.HasValue)
+            {
+                errors.Add(CustomErrorBuilder(
+                    "NOTHING_TO_CHANGE",
+                    "There are no data to insert."));
+            }
+
+            if (errors.Count > 0) throw new QueryException(errors);
+
+            StringBuilder sql = new StringBuilder();
+
+            sql.Append("UPDATE doctor.medical_procedures SET ");
+
+            if (!string.IsNullOrEmpty(newName)) sql.AppendFormat("name = '{0}',", newName);
+
+            if (recoveringDays.HasValue) sql.AppendFormat("recovering_days = {0},", recoveringDays);
+
+            sql.Replace(',', ' ', sql.Length - 1, 1);
+
+            sql.AppendFormat("WHERE name = '{0}' ", oldName);
+
+            try
+            {
+                int rows = await db.Database.ExecuteSqlRawAsync(sql.ToString());
+
+                if (rows < 1)
+                {
+                    throw new QueryException(CustomErrorBuilder(
+                       "NOT_FOUND",
+                       "There is no procedure with name '{0}'", oldName));
+                }
+            }
+            catch (PostgresException pgException)
+            {
+                switch (pgException.SqlState)
+                {
+                    case "23505":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "A procedure with provided data already exists."));
+
+                    case "22001":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Some of values inserted are too long."));
+
+                    case "23514":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "You must insert valid days."));
+
+                    case "23503":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "There are some records with associated procedures, please delete them before changing this name."));
+
+                    default:
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Unknown error"));
+                }
+            }
+            catch(QueryException e)
+            {
+                throw e;
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            return await db.MedicalProcedures
+                .FirstOrDefaultAsync(p => p.Name.Equals(string.IsNullOrEmpty(newName) ? oldName : newName));
+        }
+
+        [GraphQLType(typeof(ProcedureType))]
+        public async Task<MedicalProcedures> deleteProcedure(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] string name)
+        {
+            List<IError> errors = new List<IError>();
+
+            if (string.IsNullOrEmpty(name))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_ID",
+                    "You must provide a valid procedure name."));
+            }
+
+            if (errors.Count > 0) throw new QueryException(errors);
+
+            StringBuilder sql = new StringBuilder();
+
+            sql.AppendFormat("DELETE FROM doctor.medical_procedures WHERE name = '{0}'", name);
+
+            MedicalProcedures m = await db.MedicalProcedures
+                .FirstOrDefaultAsync(p => p.Name.Equals(name));
+
+            try
+            {
+                int rows = await db.Database.ExecuteSqlRawAsync(sql.ToString());
+
+                if (rows < 1)
+                {
+                    throw new QueryException(CustomErrorBuilder(
+                       "NOT_FOUND",
+                       "There is no procedure with name '{0}'", name));
+                }
+            }
+            catch (PostgresException pgException)
+            {
+                switch (pgException.SqlState)
+                {
+                    case "22001":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Some of values inserted are too long."));
+
+                    case "23503":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "There are some records with associated procedures, please delete them before deleting this procedure."));
+
+                    default:
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Unknown error"));
+                }
+            }
+            catch (QueryException e)
+            {
+                throw e;
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            return m;
+        }
+
+        [GraphQLType(typeof(MedicalRoomType))]
+        public async Task<MedicalRoom> addMedicalRoom(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] CreateMedicalRoomInput input)
+        {
+            List<IError> errors = new List<IError>();
+
+            if (string.IsNullOrEmpty(input.name))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_ID",
+                    "You must provide a valid name."));
+            }
+
+            if (string.IsNullOrEmpty(input.careType))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_ID",
+                    "You must provide a valid care type name."));
+            }
+
+            if (errors.Count > 0) throw new QueryException(errors);
+
+            MedicalRoom m = new MedicalRoom
+            {
+                Name = input.name,
+                IdRoom = input.id,
+                FloorNumber = input.floorNumber,
+                Capacity = input.capacity,
+                CareType = input.careType
+            };
+
+            try
+            {
+                db.MedicalRoom.Add(m);
+                await db.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                if (ex.GetBaseException() is PostgresException pgException)
+                {
+                    switch (pgException.SqlState)
+                    {
+                        case "23505":
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "A medical room with id '{0}' already exists.", input.id));
+
+                        case "22001":
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "Some of values inserted are too long."));
+
+                        case "23514":
+
+                            switch(pgException.ConstraintName){
+                                case "medical_room_capacity_check":
+                                    throw new QueryException(CustomErrorBuilder(
+                                        pgException,
+                                        "You must insert valid capacity value."));
+
+                                case "medical_room_id_room_check":
+                                    throw new QueryException(CustomErrorBuilder(
+                                        pgException,
+                                        "You must insert valid ID."));
+
+                                default:
+                                    throw new QueryException(CustomErrorBuilder(
+                                        pgException,
+                                        "You must insert valid data."));
+                            }
+
+                        default:
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "Unknown error"));
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            return m;
+        }
+
+        [GraphQLType(typeof(MedicalRoomType))]
+        public async Task<MedicalRoom> updateMedicalRoom(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] UpdateMedicalRoomInput input)
+        {
+            List<IError> errors = new List<IError>();
+
+            if (input.oldId < 1)
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_ID",
+                    "You must provide a valid room id."));
+            }
+
+            if (errors.Count > 0) throw new QueryException(errors);
+
+            StringBuilder sql = new StringBuilder();
+
+            sql.Append("UPDATE doctor.medical_room SET ");
+
+            if (!string.IsNullOrEmpty(input.name)) sql.AppendFormat("name = '{0}',", input.name);
+
+            if (!string.IsNullOrEmpty(input.careType)) sql.AppendFormat("care_type = '{0}',", input.careType);
+
+            if (input.newId.HasValue) sql.AppendFormat("id_room = {0},", input.newId);
+
+            if (input.floorNumber.HasValue) sql.AppendFormat("floor_number = {0},", input.floorNumber);
+
+            if (input.capacity.HasValue) sql.AppendFormat("capacity = {0},", input.capacity);
+
+            sql.Replace(',', ' ', sql.Length - 1, 1);
+
+            sql.AppendFormat("WHERE id_room = {0}", input.oldId);
+
+            try
+            {
+                int rows = await db.Database.ExecuteSqlRawAsync(sql.ToString());
+
+                if (rows < 1)
+                {
+                    throw new QueryException(CustomErrorBuilder(
+                       "NOT_FOUND",
+                       "There is no procedure with name '{0}'", input.oldId));
+                }
+            }
+            catch (PostgresException pgException)
+            {
+                switch (pgException.SqlState)
+                {
+                    case "23505":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "A room with id '{0}' data already exists.", input.newId));
+
+                    case "22001":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Some of values inserted are too long."));
+
+                    case "23514":
+                        switch (pgException.ConstraintName)
+                        {
+                            case "medical_room_capacity_check":
+                                throw new QueryException(CustomErrorBuilder(
+                                    pgException,
+                                    "You must insert valid capacity value."));
+
+                            case "medical_room_id_room_check":
+                                throw new QueryException(CustomErrorBuilder(
+                                    pgException,
+                                    "You must insert valid ID."));
+
+                            default:
+                                throw new QueryException(CustomErrorBuilder(
+                                    pgException,
+                                    "You must insert valid data."));
+                        }
+
+                    default:
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Unknown error"));
+                }
+            }
+            catch (QueryException e)
+            {
+                throw e;
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            return await db.MedicalRoom
+                .FirstOrDefaultAsync(p => p.IdRoom.Equals(input.newId.HasValue ? input.newId : input.oldId));
+        }
+
+        [GraphQLType(typeof(BedType))]
+        public async Task<Bed> createBed(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] int id,
+            [GraphQLNonNullType] bool isICU,
+            int? idRoom)
+        {
+            Bed m;
+            try
+            {
+                m = new Bed
+                {
+                    IdBed = id,
+                    IdRoom = idRoom,
+                    IsIcu = isICU
+                };
+
+                db.Bed.Add(m);
+                await db.SaveChangesAsync();
+
+                return m;
+            }
+            catch (DbUpdateException ex)
+            {
+                if (ex.GetBaseException() is PostgresException pgException)
+                {
+                    switch (pgException.SqlState)
+                    {
+                        case "23505":
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "A bed with id '{0}' already exists.", id));
+
+                        case "22001":
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "Some of values inserted are too long."));
+
+                        case "23503":
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "There is no room with id '{0}'.", idRoom));
+
+                        case "23514":
+
+                            switch (pgException.ConstraintName)
+                            {
+                                case "bed_id_bed_check":
+                                    throw new QueryException(CustomErrorBuilder(
+                                        pgException,
+                                        "You must insert valid id value."));
+
+                                default:
+                                    throw new QueryException(CustomErrorBuilder(
+                                        pgException,
+                                        "You must insert valid data."));
+                            }
+
+                        default:
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "Unknown error"));
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            return null;
+        }
+
+        [GraphQLType(typeof(BedType))]
+        public async Task<Bed> updateBed(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] UpdateBedInput input)
+        {
+
+            StringBuilder sql = new StringBuilder();
+
+            sql.Append("UPDATE doctor.bed SET ");
+
+            if (input.newBedId.HasValue) sql.AppendFormat("id_bed = {0},", input.newBedId);
+
+            if (input.isIcu.HasValue) sql.AppendFormat("is_icu = {0},", input.isIcu);
+
+            if (input.idRoom.HasValue) sql.AppendFormat("id_room = {0},", input.idRoom);
+
+            sql.Replace(',', ' ', sql.Length - 1, 1);
+
+            sql.AppendFormat("WHERE id_bed = {0}", input.oldBedId);
+
+            try
+            {
+                int rows = await db.Database.ExecuteSqlRawAsync(sql.ToString());
+
+                if (rows < 1)
+                {
+                    throw new QueryException(CustomErrorBuilder(
+                       "NOT_FOUND",
+                       "There is no bed with id '{0}'", input.oldBedId));
+                }
+            }
+            catch (PostgresException pgException)
+            {
+                switch (pgException.SqlState)
+                {
+                    case "23505":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "A bed with id '{0}' data already exists.", input.newBedId));
+
+                    case "22001":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Some of values inserted are too long."));
+
+                    case "23503":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "There is no room with id '{0}'.", input.idRoom));
+
+                    case "23514":
+                        switch (pgException.ConstraintName)
+                        {
+                            case "bed_id_bed_check":
+                                throw new QueryException(CustomErrorBuilder(
+                                    pgException,
+                                    "You must insert valid id."));
+
+                            default:
+                                throw new QueryException(CustomErrorBuilder(
+                                    pgException,
+                                    "You must insert valid data."));
+                        }
+
+                    default:
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Unknown error"));
+                }
+            }
+            catch (QueryException e)
+            {
+                throw e;
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            return await db.Bed
+                .FirstOrDefaultAsync(p => p.IdBed.Equals(input.newBedId.HasValue ? input.newBedId : input.oldBedId));
+        }
+
+        [GraphQLType(typeof(BedType))]
+        public async Task<Bed> deleteBed(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] int bedId)
+        {
+            if (!db.Bed.Any(p => p.IdBed.Equals(bedId)))
+            {
+                throw new QueryException(CustomErrorBuilder(
+                    "NOT_FOUND",
+                    "There is no bed with id '{0}'", bedId));
+            }
+
+            Bed m = await db.Bed
+                .FirstOrDefaultAsync(p => p.IdBed.Equals(bedId));
+
+            try
+            {
+                await db.Database.ExecuteSqlRawAsync("DELETE FROM doctor.bed WHERE id_bed = {0}", bedId);
+            }
+            catch (PostgresException pgException)
+            {
+                switch (pgException.SqlState)
+                {
+
+                    case "22001":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Some of values inserted are too long."));
+
+                    case "23503":
+                        throw new QueryException(CustomErrorBuilder(
+                               pgException,
+                               "This bed has some reservations attached, please deleted them before deleting this bed"));
+
+                    default:
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Unknown error"));
+                }
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            return m;
+        }
+
+        [GraphQLType(typeof(BedType))]
+        public async Task<Bed> addEquipment(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] int bedId,
+            [GraphQLNonNullType] string equipmentSN)
+        {
+
+            if (string.IsNullOrEmpty(equipmentSN))
+            {
+                throw new QueryException(CustomErrorBuilder(
+                    "INVALID_PARAM",
+                    "There is no equipment with serial number '{0}'", equipmentSN));
+            }
+
+            MedicalEquipmentBed m = new MedicalEquipmentBed
+            {
+                IdBed = bedId,
+                SerialNumber = equipmentSN
+            };
+
+            try
+            {
+                db.MedicalEquipmentBed.Add(m);
+                await db.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                if (ex.GetBaseException() is PostgresException pgException)
+                {
+                    switch (pgException.SqlState)
+                    {
+                        case "23505":
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "A bed with this equipment already exists."));
+
+                        case "22001":
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "Some of values inserted are too long."));
+
+                        case "23503":
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "There is no bed '{0}' / procedure '{1}' with this id.", bedId, equipmentSN));
+
+                        default:
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "Unknown error"));
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            return await db.Bed.FirstOrDefaultAsync(p => p.IdBed.Equals(bedId));
+        }
+
+        [GraphQLType(typeof(BedType))]
+        public async Task<Bed> updateBedEquipment(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] int bedId,
+            ICollection<string> newEquipmentSN,
+            ICollection<string> deletedEquipmentSN)
+        {
+            if (!db.Bed.Any(p => p.IdBed.Equals(bedId)))
+            {
+                throw new QueryException(CustomErrorBuilder(
+                    "NOT_FOUND",
+                    "There is no bed with id '{0}'", bedId));
+            }
+
+            try
+            {
+                foreach (string p in deletedEquipmentSN)
+                {
+                    MedicalEquipmentBed m = db.MedicalEquipmentBed
+                        .Where(f => f.IdBed.Equals(bedId)
+                                    && f.SerialNumber.Equals(p))
+                        .FirstOrDefault();
+
+                    if (m is null)
+                    {
+                        continue;
+                    }
+
+                    db.MedicalEquipmentBed.Remove(m);
+                }
+
+                foreach (string p in newEquipmentSN)
+                {
+                    MedicalEquipmentBed m = new MedicalEquipmentBed
+                    {
+                        IdBed = bedId,
+                        SerialNumber = p
+                    };
+
+                    db.MedicalEquipmentBed.Add(m);
+                }
+
+                await db.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                if (ex.GetBaseException() is PostgresException pgException)
+                {
+                    switch (pgException.SqlState)
+                    {
+                        case "23505":
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "Some tools required are already attached to bed with id '{0}'", bedId));
+
+                        case "22001":
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "Some of values inserted are too long."));
+
+                        case "23503":
+                            throw new QueryException(CustomErrorBuilder(
+                                   pgException,
+                                   "There are some tools with wrong serial number"));
+
+                        default:
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "Unknown error"));
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            return await db.Bed
+                .FirstOrDefaultAsync(p => p.IdBed.Equals(bedId));
+        }
+
+        [GraphQLType(typeof(StaffType))]
+        public async Task<Staff> createStaffPerson(
+        [Service] hospitecContext db,
+        [GraphQLNonNullType] CreatePersonInput input)
+        {
+            List<IError> errors = new List<IError>();
+
+            if (string.IsNullOrEmpty(input.id))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_INPUT",
+                    "You must provide a valid ID."));
+            }
+
+            if (string.IsNullOrEmpty(input.firstName))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_INPUT",
+                    "You must provide a first name."));
+            }
+
+            if (string.IsNullOrEmpty(input.lastName))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_INPUT",
+                    "You must provide a last name."));
+            }
+
+            if (string.IsNullOrEmpty(input.phoneNumber))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_INPUT",
+                    "You must provide a valid phone number"));
+            }
+
+            if (string.IsNullOrEmpty(input.canton))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_INPUT",
+                    "You must provide a canton."));
+            }
+
+            if (string.IsNullOrEmpty(input.province))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_INPUT",
+                    "You must provide a province."));
+            }
+
+            if (string.IsNullOrEmpty(input.address))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_INPUT",
+                    "You must provide an address."));
+            }
+
+            if (errors.Count > 0) throw new QueryException(errors);
+
+            Person p = new Person
+            {
+                Identification = input.id,
+                FirstName = input.firstName,
+                LastName = input.lastName,
+                PhoneNumber = input.phoneNumber,
+                Canton = input.canton,
+                Province = input.province,
+                ExactAddress = input.address,
+                BirthDate = input.birthDate
+            };
+
+            try
+            {
+                db.Person.Add(p);
+                await db.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                if (ex.GetBaseException() is PostgresException pgException)
+                {
+                    switch (pgException.SqlState)
+                    {
+                        case "23505":
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "A person with ID '{0}' already exists.", input.id));
+
+                        case "22001":
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "Some of values inserted are too long."));
+                        default:
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "Unknown error"));
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            return new Staff
+            {
+                Identification = input.id
+            };
+        }
+
+
+        [GraphQLType(typeof(StaffType))]
+        public async Task<Staff> createStaff(
+        [Service] hospitecContext db,
+        [GraphQLNonNullType] CreateStaffInput input)
+        {
+            List<IError> errors = new List<IError>();
+
+            if (string.IsNullOrEmpty(input.id))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_INPUT",
+                    "You must provide a valid ID."));
+            }
+
+            if (string.IsNullOrEmpty(input.role))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_INPUT",
+                    "You must provide a valid role name."));
+            }
+
+            if (string.IsNullOrEmpty(input.password))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_INPUT",
+                    "You must provide a valid password."));
+            }
+
+            if (errors.Count > 0) throw new QueryException(errors);
+
+            Staff p = new Staff
+            {
+                Identification = input.id,
+                AdmissionDate = input.admissionDate,
+                Name = input.role,
+                StaffPassword = input.password
+            };
+
+            try
+            {
+                db.Staff.Add(p);
+                await db.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                if (ex.GetBaseException() is PostgresException pgException)
+                {
+                    switch (pgException.SqlState)
+                    {
+                        case "23505":
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "A staff with ID '{0}' and role '{1}' already exists.", input.id, input.role));
+
+                        case "22001":
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "Some of values inserted are too long."));
+                        default:
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "Unknown error"));
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            return p;
+        }
+
+        [GraphQLType(typeof(StaffType))]
+        public async Task<Staff> updateStaffPerson(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] UpdatePersonInput input)
+        {
+            List<IError> errors = new List<IError>();
+
+            if (string.IsNullOrEmpty(input.oldId))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_INPUT",
+                    "You must provide a valid patient ID."));
+            }
+
+            if (errors.Count > 0) throw new QueryException(errors);
+
+            StringBuilder sql = new StringBuilder();
+
+            sql.Append("UPDATE admin.person SET ");
+
+            if (!string.IsNullOrEmpty(input.newId)) sql.AppendFormat("identification = '{0}',", input.newId);
+
+            if (!string.IsNullOrEmpty(input.firstName)) sql.AppendFormat("first_name = '{0}',", input.firstName);
+
+            if (!string.IsNullOrEmpty(input.lastName)) sql.AppendFormat("last_name = '{0}',", input.lastName);
+
+            if (input.birthDate.HasValue) sql.AppendFormat("birth_date = '{0}',", input.birthDate);
+
+            if (!string.IsNullOrEmpty(input.phoneNumber)) sql.AppendFormat("phone_number = '{0}',", input.phoneNumber);
+
+            if (!string.IsNullOrEmpty(input.province)) sql.AppendFormat("province = '{0}',", input.province);
+
+            if (!string.IsNullOrEmpty(input.canton)) sql.AppendFormat("canton = '{0}',", input.canton);
+
+            if (!string.IsNullOrEmpty(input.address)) sql.AppendFormat("exact_address = '{0}',", input.address);
+
+            sql.Replace(',', ' ', sql.Length - 1, 1);
+
+            sql.AppendFormat("WHERE identification = '{0}'", input.oldId);
+
+            try
+            {
+                int rows = await db.Database.ExecuteSqlRawAsync(sql.ToString());
+
+                if (rows < 1)
+                {
+                    throw new QueryException(CustomErrorBuilder(
+                    "NOT_FOUND",
+                    "The ID '{0}' doesn't match with any person", input.oldId));
+                }
+            }
+            catch (PostgresException pgException)
+            {
+                switch (pgException.SqlState)
+                {
+                    case "23505":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "A person with ID '{0}' already exists.", input.newId));
+
+                    case "22001":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Some of values inserted are too long."));
+                    default:
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Unknown error"));
+                }
+            }
+            catch (QueryException e)
+            {
+                throw e;
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            var staff = await db.Staff
+                .FirstOrDefaultAsync(p => p.Identification.Equals(
+                    string.IsNullOrEmpty(input.newId) ? input.oldId : input.newId));
+
+            if(staff is null)
+            {
+                return new Staff
+                {
+                    Identification = string.IsNullOrEmpty(input.newId) ? input.oldId : input.newId
+                };
+            } 
+            else
+            {
+                return staff;
+            }
+        }
+
+        [GraphQLType(typeof(StaffType))]
+        public async Task<Staff> updateStaff(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] UpdateStaffInput input)
+        {
+            List<IError> errors = new List<IError>();
+
+            if (string.IsNullOrEmpty(input.oldRole))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_INPUT",
+                    "You must provide a valid role name."));
+            }
+
+            if (string.IsNullOrEmpty(input.id))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_INPUT",
+                    "You must provide a valid id."));
+            }
+
+            if(string.IsNullOrEmpty(input.newRole)
+                && string.IsNullOrEmpty(input.password)
+                && !input.admissionDate.HasValue)
+            {
+                errors.Add(CustomErrorBuilder(
+                    "NOTHING_TO_CHANGE",
+                    "There is no data to insert."));
+            }
+
+            if (errors.Count > 0) throw new QueryException(errors);
+
+            StringBuilder sql = new StringBuilder();
+
+            sql.Append("UPDATE admin.staff SET ");
+
+            if (!string.IsNullOrEmpty(input.newRole)) sql.AppendFormat("name = '{0}',", input.newRole);
+
+            if (!string.IsNullOrEmpty(input.password)) sql.AppendFormat("staff_password = '{0}',", input.password);
+
+            if (input.admissionDate.HasValue) sql.AppendFormat("admission_date = '{0}',", input.admissionDate);
+
+            sql.Replace(',', ' ', sql.Length - 1, 1);
+
+            sql.AppendFormat("WHERE identification = '{0}' ", input.id);
+
+            sql.AppendFormat("AND name = '{0}'", input.oldRole);
+
+            try
+            {
+                int rows = await db.Database.ExecuteSqlRawAsync(sql.ToString());
+
+                if (rows < 1)
+                {
+                    throw new QueryException(CustomErrorBuilder(
+                       "NOT_FOUND",
+                       "There is no staff with id '{0}' and role '{1}'", input.id, input.oldRole));
+                }
+            }
+            catch (PostgresException pgException)
+            {
+                switch (pgException.SqlState)
+                {
+                    case "23505":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "A staff with role '{0}' and id '{1}' already exists.", input.newRole, input.id));
+
+                    case "22001":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Some of values inserted are too long."));
+
+                    case "23503":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "There is no role with name '{0}'.", input.newRole));
+
+                    default:
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Unknown error"));
+                }
+            }
+            catch (QueryException e)
+            {
+                throw e;
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            return await db.Staff
+                .FirstOrDefaultAsync(p => p.Identification.Equals(input.id)
+                                            && p.Name.Equals(string.IsNullOrEmpty(input.newRole) ? input.oldRole : input.newRole));
+        }
+
+        [GraphQLType(typeof(StaffType))]
+        public async Task<Staff> deleteStaff(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] string id,
+            [GraphQLNonNullType] string role)
+        {
+
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new QueryException(CustomErrorBuilder(
+                    "INVALID_INPUT",
+                    "You must provide a valid patient ID."));
+            }
+
+            if (string.IsNullOrEmpty(role))
+            {
+                throw new QueryException(CustomErrorBuilder(
+                    "INVALID_INPUT",
+                    "You must provide a role."));
+            }
+
+            Staff p = await db.Staff
+                .FirstOrDefaultAsync(p => p.Identification.Equals(id)
+                                            && p.Name.Equals(role));
+
+            if (p is null)
+                throw new QueryException(CustomErrorBuilder(
+                    "NOT_FOUND",
+                    "ID '{0}' and role '{1}' provided doesn't match any staff.", id, role));
+
+            try
+            {
+                db.Remove(p);
+
+                await db.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                if (ex.GetBaseException() is PostgresException pgException)
+                {
+                    switch (pgException.SqlState)
+                    {
+                        case "22001":
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "Some of values inserted are too long."));
+                        default:
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "Unknown error"));
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            return p;
+        }
+
+        [GraphQLType(typeof(EquipmentType))]
+        public async Task<MedicalEquipment> createEquipment(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] CreateEquipmentInput input)
+        {
+            List<IError> errors = new List<IError>();
+
+            if (string.IsNullOrEmpty(input.serialNumber))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_INPUT",
+                    "You must provide a serial number"));
+            }
+
+            if (string.IsNullOrEmpty(input.name))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_INPUT",
+                    "You must provide a name."));
+            }
+
+            if (string.IsNullOrEmpty(input.provider))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_INPUT",
+                    "You must provide a provider."));
+            }
+
+            if (errors.Count > 0) throw new QueryException(errors);
+
+
+            MedicalEquipment m = new MedicalEquipment
+            {
+                Name = input.name,
+                SerialNumber = input.serialNumber,
+                Provider = input.provider,
+                Stock = input.stock
+            };
+            try
+            {
+                db.MedicalEquipment.Add(m);
+                await db.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                if (ex.GetBaseException() is PostgresException pgException)
+                {
+                    switch (pgException.SqlState)
+                    {
+                        case "23505":
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "A equipment with id '{0}' already exists.", input.serialNumber));
+
+                        case "22001":
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "Some of values inserted are too long."));
+
+                        case "23514":
+
+                            switch (pgException.ConstraintName)
+                            {
+                                case "medical_equipment_stock_check":
+                                    throw new QueryException(CustomErrorBuilder(
+                                        pgException,
+                                        "You must insert valid stock value."));
+
+                                default:
+                                    throw new QueryException(CustomErrorBuilder(
+                                        pgException,
+                                        "You must insert valid data."));
+                            }
+
+                        default:
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "Unknown error"));
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            return m;
+        }
+
+        [GraphQLType(typeof(EquipmentType))]
+        public async Task<MedicalEquipment> updateEquipment(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] UpdateEquipmentInput input)
+        {
+            if (string.IsNullOrEmpty(input.oldSerialNumber))
+            {
+                throw new QueryException(CustomErrorBuilder(
+                    "INVALID_INPUT",
+                    "You must provide a serial number"));
+            }
+
+            StringBuilder sql = new StringBuilder();
+
+            sql.Append("UPDATE doctor.medical_equipment SET ");
+
+            if (!string.IsNullOrEmpty(input.newSerialNumber)) sql.AppendFormat("serial_number = '{0}',", input.newSerialNumber);
+
+            if (!string.IsNullOrEmpty(input.name)) sql.AppendFormat("name = '{0}',", input.name);
+
+            if (!string.IsNullOrEmpty(input.provider)) sql.AppendFormat("provider = '{0}',", input.provider);
+
+            if (input.stock.HasValue) sql.AppendFormat("stock = '{0}',", input.stock);
+
+            sql.Replace(',', ' ', sql.Length - 1, 1);
+
+            sql.AppendFormat("WHERE serial_number = '{0}'", input.oldSerialNumber);
+
+            try
+            {
+                int rows = await db.Database.ExecuteSqlRawAsync(sql.ToString());
+
+                if (rows < 1)
+                {
+                    throw new QueryException(CustomErrorBuilder(
+                       "NOT_FOUND",
+                       "There is no equipment with id '{0}'", input.oldSerialNumber));
+                }
+            }
+            catch (PostgresException pgException)
+            {
+                switch (pgException.SqlState)
+                {
+                    case "23505":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "A equipment with id '{0}' already exists.", input.newSerialNumber));
+
+                    case "22001":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Some of values inserted are too long."));
+
+                    case "23514":
+                        switch (pgException.ConstraintName)
+                        {
+                            case "medical_equipment_stock_check":
+                                throw new QueryException(CustomErrorBuilder(
+                                    pgException,
+                                    "You must insert valid stock value."));
+
+                            default:
+                                throw new QueryException(CustomErrorBuilder(
+                                    pgException,
+                                    "You must insert valid data."));
+                        }
+
+                    default:
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Unknown error"));
+                }
+            }
+            catch (QueryException e)
+            {
+                throw e;
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            return await db.MedicalEquipment
+                .FirstOrDefaultAsync(p => p.SerialNumber.Equals(string.IsNullOrEmpty(input.newSerialNumber) ? input.oldSerialNumber : input.newSerialNumber));
         }
     }
 }
+

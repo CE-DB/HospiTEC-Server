@@ -13,6 +13,8 @@ namespace HospiTec_Server.Logic.Graphql.Types
         {
             base.Configure(descriptor);
 
+            descriptor.Name("Appointment");
+
             descriptor.BindFieldsExplicitly();
 
             descriptor.Field(e => e.ProcedureNameNavigation)

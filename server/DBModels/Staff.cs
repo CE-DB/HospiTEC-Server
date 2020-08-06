@@ -7,7 +7,7 @@ namespace HospiTec_Server.DBModels
     {
         public string Name { get; set; }
         public string Identification { get; set; }
-        public DateTime AdmissionDate { get; set; }
+        public DateTime? AdmissionDate { get; set; }
         public string StaffPassword { get; set; }
 
         public  Person IdentificationNavigation { get; set; }

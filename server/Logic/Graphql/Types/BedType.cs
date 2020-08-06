@@ -24,7 +24,7 @@ namespace HospiTec_Server.Logic.Graphql.Types
                 .Type<NonNullType<BooleanType>>();
 
             descriptor.Field(e => e.IdRoom)
-                .Type<NonNullType<IntType>>();
+                .Type<IntType>();
 
             descriptor.Field("equipment")
                 .Type<ListType<NonNullType<EquipmentType>>>()
@@ -32,10 +32,10 @@ namespace HospiTec_Server.Logic.Graphql.Types
 
                     return ctx.Service<hospitecContext>()
                         .MedicalEquipmentBed
-                        .Where(e => e.SerialNumber.Equals(ctx.Parent<Bed>().IdBed))
+                        .Where(e => e.IdBed.Equals(ctx.Parent<Bed>().IdBed))
                         .Include(e => e.SerialNumberNavigation)
                         .Select(e => e.SerialNumberNavigation)
-                        .FirstOrDefault();
+                        .ToList();
                 });
         }
     }
