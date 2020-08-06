@@ -101,7 +101,7 @@ CREATE TABLE doctor.Medical_Equipment (
   Serial_Number VARCHAR(50),
   Name VARCHAR(50) NOT NULL,
   Stock INT NOT NULL CHECK ( Stock >= 0 ),
-  Provider VARCHAR(50) NOT NULL,
+  Provider VARCHAR(200) NOT NULL,
   PRIMARY KEY (Serial_Number)
 );
 
