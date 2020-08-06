@@ -40,32 +40,28 @@ namespace HospiTec_Server.Logic.Graphql
 
         [GraphQLType(typeof(NonNullType<ListType<NonNullType<MedicalRoomType>>>))]
         public async Task<List<MedicalRoom>> medicalRooms(
-            [Service] hospitecContext db,
-            [GraphQLNonNullType] string patientId)
+            [Service] hospitecContext db)
         {
             return await db.MedicalRoom.ToListAsync();
         }
 
         [GraphQLType(typeof(NonNullType<ListType<NonNullType<BedType>>>))]
         public async Task<List<Bed>> beds(
-            [Service] hospitecContext db,
-            [GraphQLNonNullType] string patientId)
+            [Service] hospitecContext db)
         {
             return await db.Bed.ToListAsync();
         }
 
         [GraphQLType(typeof(NonNullType<ListType<NonNullType<ProcedureType>>>))]
         public async Task<List<MedicalProcedures>> procedures(
-            [Service] hospitecContext db,
-            [GraphQLNonNullType] string patientId)
+            [Service] hospitecContext db)
         {
             return await db.MedicalProcedures.ToListAsync();
         }
 
         [GraphQLType(typeof(NonNullType<ListType<NonNullType<StaffType>>>))]
         public async Task<List<Staff>> staff(
-            [Service] hospitecContext db,
-            [GraphQLNonNullType] string patientId)
+            [Service] hospitecContext db)
         {
             return await db.Staff.ToListAsync();
         }
