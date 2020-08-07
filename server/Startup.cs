@@ -90,6 +90,10 @@ namespace HospiTec_Server
                 options.UseNpgsql(Configuration.GetConnectionString("postgresql")));
 
             services
+              .AddDbContext<CotecModels.CoTEC_DBContext>(options =>
+                options.UseSqlServer(Configuration.GetConnectionString("sqlserver")));
+
+            services
                 .AddDataLoaderRegistry()
                 .AddGraphQL(SchemaBuilder
                     .New()

@@ -21,19 +21,22 @@ namespace HospiTec_Server.Logic.Graphql.Types
                 .Type<NonNullType<StringType>>();
 
             descriptor.Field(e => e.PhoneNumber)
-                .Type<NonNullType<StringType>>();
+                .Type<StringType>();
 
             descriptor.Field(e => e.Canton)
-                .Type<NonNullType<StringType>>();
+                .Type<StringType>();
 
             descriptor.Field(e => e.Province)
                 .Type<NonNullType<StringType>>();
 
             descriptor.Field(e => e.ExactAddress)
-                .Type<NonNullType<StringType>>();
+                .Type<StringType>();
 
             descriptor.Field(e => e.BirthDate)
-                .Type<NonNullType<DateType>>();
+                .Type<DateType>();
+
+            descriptor.Field(e => e.External)
+                .Type<NonNullType<BooleanType>>();
         }
 
 

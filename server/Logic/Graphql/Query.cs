@@ -1,4 +1,5 @@
-﻿using HospiTec_Server.DBModels;
+﻿using HospiTec_Server.CotecModels;
+using HospiTec_Server.DBModels;
 using HospiTec_Server.Logic.Graphql.Types;
 using HotChocolate;
 using HotChocolate.Types;
@@ -14,9 +15,31 @@ namespace HospiTec_Server.Logic.Graphql
     {
         [GraphQLType(typeof(NonNullType<ListType<NonNullType<PersonType>>>))]
         public async Task<List<Person>> patients(
-            [Service] hospitecContext db)
+            [Service] hospitecContext db,
+            [Service] CoTEC_DBContext cotec)
         {
-            return await db.Person.ToListAsync();
+            List<Person> local = await db.Person.ToListAsync();
+
+            List<CotecModels.Patient> cotecremote = await cotec.Patient
+                .Where(p => p.Country.Equals("Costa Rica, Republic of"))
+                .ToListAsync();
+
+            foreach (CotecModels.Patient p in cotecremote)
+            {
+                local.Add(new Person {
+                    Identification = p.Identification,
+                    BirthDate = null,
+                    Canton = null,
+                    ExactAddress = null,
+                    FirstName = p.FirstName,
+                    LastName = p.LastName,
+                    PhoneNumber = null,
+                    Province = p.Region,
+                    External = true
+                });
+            }
+
+            return local;
         }
 
         [GraphQLType(typeof(NonNullType<ListType<NonNullType<ReservationType>>>))]
@@ -60,7 +83,7 @@ namespace HospiTec_Server.Logic.Graphql
         }
 
         [GraphQLType(typeof(NonNullType<ListType<NonNullType<StaffType>>>))]
-        public async Task<List<Staff>> staff(
+        public async Task<List<DBModels.Staff>> staff(
             [Service] hospitecContext db)
         {
             return await db.Staff.ToListAsync();

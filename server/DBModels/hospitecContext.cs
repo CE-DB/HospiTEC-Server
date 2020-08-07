@@ -276,6 +276,9 @@ namespace HospiTec_Server.DBModels
 
                 entity.ToTable("person", "admin");
 
+                entity.Ignore(p => p.External);
+                    
+
                 entity.Property(e => e.Identification)
                     .HasColumnName("identification")
                     .HasMaxLength(12);

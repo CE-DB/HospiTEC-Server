@@ -2401,6 +2401,49 @@ namespace HospiTec_Server.Logic.Graphql
             return await db.MedicalEquipment
                 .FirstOrDefaultAsync(p => p.SerialNumber.Equals(string.IsNullOrEmpty(input.newSerialNumber) ? input.oldSerialNumber : input.newSerialNumber));
         }
+
+        [GraphQLType(typeof(MedicalRoomType))]
+        public async Task<MedicalRoom> deleteMedicalRoom(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] int id)
+        {
+            MedicalRoom m = await db.MedicalRoom
+                .FirstOrDefaultAsync(p => p.IdRoom.Equals(id));
+
+            if(m is null)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                    "NOT_FOUND",
+                    "There is no room with id '{0}'", id));
+            }
+
+            try
+            {
+                await db.Database.ExecuteSqlRawAsync("CALL delete_medical_room({0})", id);
+            }
+            catch (PostgresException pgException)
+            {
+                switch (pgException.SqlState)
+                {
+                    case "22001":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Some of values inserted are too long."));
+                    default:
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Unknown error"));
+                }
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            return m;
+        }
     }
 }
 

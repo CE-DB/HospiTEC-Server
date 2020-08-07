@@ -272,7 +272,7 @@ BEGIN
 END
 $$;
 
-CREATE OR REPLACE PROCEDURE DeleteMedicalRoom(id INT)
+CREATE OR REPLACE PROCEDURE delete_medical_room(id INT)
 LANGUAGE plpgsql
 AS $$
 
