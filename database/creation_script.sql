@@ -296,6 +296,45 @@ WHERE ID_ROOM = Id;
 
 END $$;
 
+CREATE OR REPLACE PROCEDURE create_reservation(
+    patientId varchar(12)
+)
+    LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF patientId IS NULL
+
+    then
+        RAISE EXCEPTION 'Patient id is null'
+      USING HINT = 'You must provide a valid patient id';
+
+    end if;
+
+    IF EXISTS(SELECT *
+                FROM doctor.clinic_record AS d
+                WHERE d.Identification = patientId)
+    THEN
+
+        DELETE FROM doctor.clinic_record
+        WHERE Identification = patientId;
+    end if;
+
+    IF EXISTS(SELECT *
+                FROM admin.reservation AS d
+                WHERE d.Identification = patientId)
+    THEN
+
+        CALL delete_beds_procedures_reserved(patientId);
+
+    end if;
+
+    DELETE FROM admin.patient
+    WHERE identification = patientId;
+
+END
+$$;
+
 INSERT INTO doctor.medical_equipment(serial_number, name, stock, provider)
 VALUES
        ('10', 'luces quirurgicas', 76, 'Empresa A'),

@@ -9,5 +9,7 @@ namespace HospiTec_Server.Logic.Graphql.Types.Inputs
         public string patientId { get; set; }
         [GraphQLNonNullType]
         public DateTime checkInDate { get; set; }
+        [GraphQLNonNullType]
+        public bool icu { get; set; }
     }
 }
