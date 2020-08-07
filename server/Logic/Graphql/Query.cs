@@ -83,7 +83,7 @@ namespace HospiTec_Server.Logic.Graphql
         }
 
         [GraphQLType(typeof(NonNullType<ListType<NonNullType<StaffType>>>))]
-        public async Task<List<DBModels.Staff>> staff(
+        public async Task<List<Staff>> staff(
             [Service] hospitecContext db)
         {
             return await db.Staff.ToListAsync();
