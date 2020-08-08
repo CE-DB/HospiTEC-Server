@@ -4,12 +4,12 @@ using MongoDB.Driver;
 
 namespace HospiTec_Server.database
 {
-    class MongoDatabase
+    public class MongoDatabase
     {
-        private MongoClient client;
-        private IMongoDatabase db;
-        private IMongoCollection<StaffEvaluation> staffCollection;
-        private IMongoCollection<HospitalEvaluation> hospitalCollection;
+        public MongoClient client;
+        public IMongoDatabase db;
+        public IMongoCollection<StaffEvaluation> staffCollection;
+        public IMongoCollection<HospitalEvaluation> hospitalCollection;
         
         public MongoDatabase()
         {
@@ -38,7 +38,7 @@ namespace HospiTec_Server.database
             return result;
         }
 
-        public bool generateHospitalEvaluation(string patient_id, string category, int evaluation, DateTime date)
+        public bool generateHospitalEvaluation(string patient_id, int category, int evaluation, DateTime date)
         {
             var result = true;
             try
@@ -55,15 +55,15 @@ namespace HospiTec_Server.database
         }  
     }
 
-    class HospitalEvaluation
+    public class HospitalEvaluation
     {
         public ObjectId _id { get; set; }
         public string patient_id { get; set; }
-        public string category { get; set; }
+        public int category { get; set; }
         public int evaluation { get; set; }
         public DateTime date { get; set; }
 
-        public HospitalEvaluation(string __patient_id, string __catetory, int __evaluation, DateTime __date)
+        public HospitalEvaluation(string __patient_id, int __catetory, int __evaluation, DateTime __date)
         {
             this.patient_id = __patient_id;
             this.category = __catetory;
@@ -72,7 +72,7 @@ namespace HospiTec_Server.database
         }
     }
 
-    class StaffEvaluation
+    public class StaffEvaluation
     {
         public string _id { get; set; }
         public string patient_id { get; set; }

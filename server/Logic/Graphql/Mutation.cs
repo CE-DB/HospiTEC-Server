@@ -12,10 +12,8 @@ using System.Threading.Tasks;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
-using HotChocolate.AspNetCore.Authorization;
 using HospiTec_Server.database;
 using HospiTec_Server.database.DBModels;
-using MongoDB.Bson;
 
 namespace HospiTec_Server.Logic.Graphql
 {
@@ -2793,6 +2791,27 @@ namespace HospiTec_Server.Logic.Graphql
                 .Where(p => p.Identification.Equals(input.patientId)
                             && p.CheckInDate.Equals(input.newCheckInDate))
                 .FirstOrDefaultAsync();
+        }
+
+        public bool HospitalEvaluation(
+            [Service] MongoDatabase db,
+            [GraphQLNonNullType] string patientID,
+            [GraphQLNonNullType] int category,
+            [GraphQLNonNullType] int evaluation,
+            [GraphQLNonNullType] DateTime date)
+        {
+            List<IError> errors = new List<IError>();
+
+            if (string.IsNullOrEmpty(patientID))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_ID",
+                    "You must provide a valid ID."));
+            }
+
+            if (errors.Count > 0) throw new QueryException(errors);
+
+            return db.generateHospitalEvaluation(patientID, category, evaluation, date);
         }
     }
 }
