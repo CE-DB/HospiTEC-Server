@@ -399,6 +399,61 @@ namespace HospiTec_Server.Logic.Graphql
             return p;
         }
 
+        [GraphQLType(typeof(PersonType))]
+        public async Task<Person> deleteStaffPerson(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] string id)
+        {
+
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new QueryException(CustomErrorBuilder(
+                    "INVALID_INPUT",
+                    "You must provide a valid patient ID."));
+            }
+
+            Person p = await db.Person.FirstOrDefaultAsync(p => p.Identification.Equals(id));
+
+            if (p is null)
+                throw new QueryException(CustomErrorBuilder(
+                    "NOT_FOUND",
+                    "ID provided '{0}' doesn't match any staff.", id));
+
+            try
+            {
+                await db.Database.ExecuteSqlRawAsync("DELETE FROM admin.person WHERE identification = {0}", p.Identification);
+
+
+            }
+            catch (PostgresException pgException)
+            {
+                switch (pgException.SqlState)
+                {
+                    case "22001":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Some of values inserted are too long."));
+
+                    case "23503":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "You have a patient attached, please delete the patient associated in order to deleting your personal data."));
+
+                    default:
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Unknown error"));
+                }
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            return p;
+        }
 
         [GraphQLType(typeof(RecordType))]
         public async Task<ClinicRecord> createRecord(
@@ -2420,6 +2475,49 @@ namespace HospiTec_Server.Logic.Graphql
             try
             {
                 await db.Database.ExecuteSqlRawAsync("CALL delete_medical_room({0})", id);
+            }
+            catch (PostgresException pgException)
+            {
+                switch (pgException.SqlState)
+                {
+                    case "22001":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Some of values inserted are too long."));
+                    default:
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Unknown error"));
+                }
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            return m;
+        }
+
+        [GraphQLType(typeof(EquipmentType))]
+        public async Task<MedicalEquipment> deleteEquipment(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] string serialNumber)
+        {
+            MedicalEquipment m = db.MedicalEquipment
+                .FirstOrDefault(p => p.SerialNumber.Equals(serialNumber));
+
+            if (m is null)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                    "NOT_FOUND",
+                    "There is no equipment with S/N '{0}'", serialNumber));
+            }
+
+            try
+            {
+                int rows = db.Database.ExecuteSqlRaw("DELETE FROM doctor.medical_equipment WHERE serial_number = {0}", serialNumber);
             }
             catch (PostgresException pgException)
             {

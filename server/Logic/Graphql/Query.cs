@@ -52,6 +52,14 @@ namespace HospiTec_Server.Logic.Graphql
                 .ToListAsync();
         }
 
+        [GraphQLType(typeof(NonNullType<ListType<NonNullType<EquipmentType>>>))]
+        public async Task<List<MedicalEquipment>> equipment(
+            [Service] hospitecContext db)
+        {
+            return await db.MedicalEquipment
+                .ToListAsync();
+        }
+
         [GraphQLType(typeof(NonNullType<ListType<NonNullType<RecordType>>>))]
         public async Task<List<ClinicRecord>> records(
             [Service] hospitecContext db,

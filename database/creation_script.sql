@@ -155,6 +155,25 @@ CREATE TRIGGER record_procedures_deleter
     FOR EACH ROW
     EXECUTE PROCEDURE delete_record_procedures();
 
+CREATE OR REPLACE FUNCTION delete_medical_equipment()
+    RETURNS TRIGGER
+    LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    DELETE FROM doctor.medical_equipment_bed
+    WHERE serial_number = OLD.serial_number;
+
+    RETURN OLD;
+END
+$$;
+
+CREATE TRIGGER equipment_deleter
+    BEFORE DELETE
+    ON doctor.medical_equipment
+    FOR EACH ROW
+    EXECUTE PROCEDURE delete_medical_equipment();
+
 CREATE OR REPLACE PROCEDURE delete_beds_procedures_reserved(
     patientId varchar(12),
     checkInDate Date = null
@@ -472,6 +491,9 @@ BEGIN
 
 END
 $$;
+
+SELECT person.identification
+FROM admin.person FULL OUTER JOIN ADMIN.Patient ON person.identification = patient.identification
 
 call update_reserved_check_in_date(
     'N7854923',
