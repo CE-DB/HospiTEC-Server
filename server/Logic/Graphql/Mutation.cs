@@ -3102,7 +3102,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <returns>The equipment object deleted.</returns>
         //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(EquipmentType))]
-        public Task<MedicalEquipment> deleteEquipment(
+        public MedicalEquipment deleteEquipment(
             [Service] hospitecContext db,
             [GraphQLNonNullType] string serialNumber)
         {
