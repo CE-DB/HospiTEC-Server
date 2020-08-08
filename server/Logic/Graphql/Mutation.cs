@@ -164,7 +164,7 @@ namespace HospiTec_Server.Logic.Graphql
             return p;
         }
 
-        [Authorize(Policy = Constants.patientRole)]
+        //[Authorize(Policy = Constants.patientRole)]
         [GraphQLType(typeof(PersonType))]
         public async Task<Person> addPassword(
             [GraphQLNonNullType] string patientId,

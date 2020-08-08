@@ -19,11 +19,6 @@ namespace HospiTec_Server.database
             
             this.staffCollection = db.GetCollection<StaffEvaluation>("staffEvaluation");
             this.hospitalCollection = db.GetCollection<HospitalEvaluation>("hospitalEvaluation");
-            
-            
-            //var staffCollection = db.GetCollection<StaffEvaluation>("staffEvaluation");
-
-            //var hospitalCollection = db.GetCollection<HospitalEvaluation>("hospitalEvaluation");
 
         }
 
