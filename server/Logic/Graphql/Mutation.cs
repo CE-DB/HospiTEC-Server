@@ -2813,6 +2813,34 @@ namespace HospiTec_Server.Logic.Graphql
 
             return db.generateHospitalEvaluation(patientID, category, evaluation, date);
         }
+
+        public bool staffEvaluation(
+            [Service] MongoDatabase db,
+            [GraphQLNonNullType] string patientID,
+            [GraphQLNonNullType] string staffID,
+            [GraphQLNonNullType] int evaluation,
+            [GraphQLNonNullType] DateTime date)
+        {
+            List<IError> errors = new List<IError>();
+
+            if (string.IsNullOrEmpty(patientID))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_ID",
+                    "You must provide a valid ID."));
+            }
+
+            if (string.IsNullOrEmpty(staffID))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_ID",
+                    "You must provide a valid ID."));
+            }
+
+            if (errors.Count > 0) throw new QueryException(errors);
+
+            return db.generateStaffEvaluation(patientID, staffID, evaluation, date);
+        }
     }
 }
 
