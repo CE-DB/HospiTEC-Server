@@ -59,7 +59,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This function create patients.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="input">This handle the information necesary to make the insertion of the patient.</param>
         /// <returns>The model of the patient inserted.</returns>
         [GraphQLType(typeof(PersonType))]
@@ -193,7 +193,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// </summary>
         /// <param name="patientId">The identification code of the patient</param>
         /// <param name="password">The password of the patient.</param>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <returns>The model of the patient specified.</returns>
         [GraphQLType(typeof(PersonType))]
         public async Task<Person> addPassword(
@@ -285,7 +285,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This updates the patient personal info, except the password.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="input">This handles the patient indetifiying info and the fields to be updated.</param>
         /// <returns>The patient person info updated.</returns>
         //[Authorize(Policy = Constants.doctorRole)]
@@ -391,7 +391,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This deletes a patient and all his related info (clinica records, reservations, etc.)
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="id">The identification code of patient</param>
         /// <returns>The patient object with related info.</returns>
         //[Authorize(Policy = Constants.doctorRole)]
@@ -488,7 +488,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// This function deletes the personal info of specific staff member, this function must be executed after
         /// the function deleteStaff.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="id">The identification code of the staff member</param>
         /// <returns>An object with all info about the staff member.</returns>
         //[Authorize(Policy = Constants.adminRole)]
@@ -564,7 +564,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This function createe
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="input"></param>
         /// <returns></returns>
         //[Authorize(Policy = Constants.doctorRole)]
@@ -666,7 +666,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This creates a procedure related with a specific clinic record entry of a patient
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="input">This handles the related identifiying information of patient
         /// and the procedure to insert.</param>
         /// <returns>The clinic record related</returns>
@@ -794,7 +794,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This modifies a specific clinic record entry of a patient.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="input">This handles the identifiying information for the entry and the information to update.</param>
         /// <returns>The clinic record updated.</returns>
         //[Authorize(Policy = Constants.doctorRole)]
@@ -914,7 +914,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This deletes a specific clinic record entry.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="patientId">The patient identification code.</param>
         /// <param name="pathologyName">The pathology name</param>
         /// <param name="diagnosticDate">The pathology diagnostic date.</param>
@@ -1015,7 +1015,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This updates a specific medical procedure related with a clinic record entry.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="input">The information to locate the clinic record and the procedures to delete or to add.</param>
         /// <returns></returns>
         //[Authorize(Policy = Constants.doctorRole)]
@@ -1162,7 +1162,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This validates the user inserted and generates a JWT Token to grant access to resources
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="id"></param>
         /// <param name="password"></param>
         /// <param name="role"></param>
@@ -1218,7 +1218,7 @@ namespace HospiTec_Server.Logic.Graphql
                 new Claim(JwtRegisteredClaimNames.Sub, dbStaff.Identification),
                 new Claim(Constants.RoleClaim, Constants.patientRole),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-            };
+                };
 
                 var key = new SymmetricSecurityKey(
                     Encoding.UTF8.GetBytes(Constants.key));
@@ -1248,7 +1248,7 @@ namespace HospiTec_Server.Logic.Graphql
             {
                 var dbStaff = await db.Staff.Where(s => s.Identification.Equals(id) && s.StaffPassword.Equals(password)).FirstOrDefaultAsync();
 
-                if (dbStaff is null)
+                if (dbStaff is null || !dbStaff.Name.Equals(role))
                 {
                     throw new QueryException(CustomErrorBuilder(
                         "UNAUTHORIZED",
@@ -1291,7 +1291,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This creates a new medical procedure
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="name">The name of new procedure</param>
         /// <param name="recoveringDays">The days that a patient requires to recover</param>
         /// <returns>The procedure object created.</returns>
@@ -1379,7 +1379,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This updates the information of specified procedure.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="oldName">The name of the medical procedure to update</param>
         /// <param name="newName">The new name of the medical procedure</param>
         /// <param name="recoveringDays">The new recovering days value, this and the new name can be ommited.</param>
@@ -1494,7 +1494,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This deletes the medical procedure specified.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="name">The name of the procedure to delete</param>
         /// <returns>The object of the medical procedure deleted.</returns>
         //[Authorize(Policy = Constants.adminRole)]
@@ -1582,7 +1582,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This adds a new medical room
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="input">This handles the information to insert.</param>
         /// <returns>The medical room object created.</returns>
         //[Authorize(Policy = Constants.adminRole)]
@@ -1691,7 +1691,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This updates the medical room specified.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="input">The identifiying information of the medical room to update and the fields to update.</param>
         /// <returns>The medical room updated.</returns>
         //[Authorize(Policy = Constants.adminRole)]
@@ -1810,7 +1810,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This creates new beds.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="id">The id number for the new bed.</param>
         /// <param name="isICU">True if the bed is for intensive care unite or false if it's not.</param>
         /// <param name="idRoom">The medical room where the bed is, this is optional</param>
@@ -1907,7 +1907,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This updates the specified bed.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="input">The information related with the bed to update.</param>
         /// <returns>The bed object updated.</returns>
         [GraphQLType(typeof(BedType))]
@@ -2010,7 +2010,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This deleted the specified bed.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="bedId">The id number of the bed to delete.</param>
         /// <returns>The bed object deleted.</returns>
         //[Authorize(Policy = Constants.adminRole)]
@@ -2080,7 +2080,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This adds new medical equipment to specified bed.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="bedId">The id number of the bed.</param>
         /// <param name="equipmentSN">The serial number of the equipment tool selected.</param>
         /// <returns>The bed updated with the new equipment</returns>
@@ -2163,7 +2163,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This changes the equipment of specified bed.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="bedId">The id of the bed to change</param>
         /// <param name="newEquipmentSN">The serial numbers of all equipment to add.</param>
         /// <param name="deletedEquipmentSN">The serial numbers of all equipment to delete.</param>
@@ -2268,7 +2268,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This creates a new staff person entity.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="input">The personal info for the new staff member person.</param>
         /// <returns>The staff object created.</returns>
         //[Authorize(Policy = Constants.adminRole)]
@@ -2399,7 +2399,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// This create the staff member as it is.
         /// This has to be executed after createPersonStaff function
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="input">The information related with the staff member (admission date, password, etc.)</param>
         /// <returns>The staff created</returns>
         //[Authorize(Policy = Constants.adminRole)]
@@ -2494,7 +2494,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This updates the personal info of the specified staff member.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="input">The identifiying information and fields to update of the staff member</param>
         /// <returns>The staff member updated.</returns>
         //[Authorize(Policy = Constants.adminRole)]
@@ -2612,7 +2612,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This updates the information related with the staff member (admission date, role, etc.)
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="input">Identifiying information and fields to update.</param>
         /// <returns>The updated staff member object.</returns>
         //[Authorize(Policy = Constants.adminRole)]
@@ -2732,7 +2732,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This deletes the staff member with all his personal information.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="id">The identification number of the staff member.</param>
         /// <param name="role">The role of the member.</param>
         /// <returns>The staff object with all information.</returns>
@@ -2815,7 +2815,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This creates new medical equipment.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="input">The information to create the equipment.</param>
         /// <returns>The new medical equipment object.</returns>
         //[Authorize(Policy = Constants.adminRole)]
@@ -2926,7 +2926,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This updates the information of a specified equipment.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="input">The information to identify the equipment to update and the fields to update.</param>
         /// <returns>The equipment object updated.</returns>
         //[Authorize(Policy = Constants.adminRole)]
@@ -3034,7 +3034,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This deletes the specified medical room
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="id">The id number of the specified medical room.</param>
         /// <returns>The medical room deleted.</returns>
         //[Authorize(Policy = Constants.adminRole)]
@@ -3097,7 +3097,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This deletes the medical equipment specified.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="serialNumber">The serial number of the equipment specified.</param>
         /// <returns>The equipment object deleted.</returns>
         //[Authorize(Policy = Constants.adminRole)]
@@ -3160,7 +3160,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This create a reservation for a specified patient and assigns a bed automatically
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="input">The information related with the reservation.</param>
         /// <returns></returns>
         //[Authorize(Policy = Constants.adminRole)]
@@ -3259,7 +3259,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This creates procedures for a specified reservation
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="input">The information related with the reservation to update and the procedure to attach.</param>
         /// <returns>The reservation object updated.</returns>
         //[Authorize(Policy = Constants.adminRole)]
@@ -3310,6 +3310,11 @@ namespace HospiTec_Server.Logic.Graphql
             }
             catch (PostgresException pgException)
             {
+                db.Database.ExecuteSqlRaw(
+                    "DELETE FROM admin.reservation " +
+                    "WHERE identification = {0} " +
+                    "AND check_in_date = {1}", input.patientId, input.checkInDate);
+
                 switch (pgException.SqlState)
                 {
                     case "23505":
@@ -3326,6 +3331,12 @@ namespace HospiTec_Server.Logic.Graphql
                         throw new QueryException(CustomErrorBuilder(
                             pgException,
                             "The procedure specified doesn't exists."));
+
+                    case "P0001":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            pgException.Message));
+                        break;
 
                     default:
                         throw new QueryException(CustomErrorBuilder(
@@ -3349,7 +3360,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This updates the reservation procedures attached.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="input">The information of the reservation to update and the procedures to add or delete.</param>
         /// <returns>The reservation object updated.</returns>
         //[Authorize(Policy = Constants.adminRole)]
@@ -3497,7 +3508,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This udates the check in date of the reservation specified.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="input">The information of the reservation and the new check in date.</param>
         /// <returns>The reservation object updated.</returns>
         //[Authorize(Policy = Constants.adminRole)]
@@ -3588,7 +3599,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This creates a new hospital evaluation entry.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="patientID">The patient identification code who is evaluating</param>
         /// <param name="category">The category to evaluate.</param>
         /// <param name="evaluation">The value of the evaluation in scale of 1 to 5.</param>
@@ -3632,7 +3643,7 @@ namespace HospiTec_Server.Logic.Graphql
         /// <summary>
         /// This creates a evaluation of staff member specified.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="db">Context of database</param>
         /// <param name="patientID">The patient who is making the evaluation.</param>
         /// <param name="staffID">The staff member identification code who is under evaluation.</param>
         /// <param name="evaluation">The evaluation value in scale of 1 to 5</param>
@@ -3678,6 +3689,75 @@ namespace HospiTec_Server.Logic.Graphql
             if (errors.Count > 0) throw new QueryException(errors);
 
             return db.generateStaffEvaluation(patientID, staffID, evaluation, date);
+        }
+
+        /// <summary>
+        /// This method deletes a reservation and it's procedures related.
+        /// </summary>
+        /// <param name="db">Context of database</param>
+        /// <param name="patientId">The identification code of the patient</param>
+        /// <param name="checkInDate">The </param>
+        /// <returns></returns>
+        //[Authorize(Policy = Constants.patientRole)]
+        [GraphQLType(typeof(ReservationType))]
+        public Reservation deleteReservation(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] string patientId,
+            [GraphQLNonNullType] DateTime checkInDate)
+        {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (DELETE)", time));
+            s.AppendLine(string.Format("{0}: Operation = Delete reservation of patient {1}", time, patientId));
+
+            Console.WriteLine(s.ToString());
+
+
+            Reservation m = db.Reservation
+                .FirstOrDefault(p => p.Identification.Equals(patientId)
+                                        && p.CheckInDate.Equals(checkInDate));
+
+            if (m is null)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                    "NOT_FOUND",
+                    "There is no reservation of patient '{0}' and check in date '{1}'", patientId, checkInDate.ToString("yyyy-MM-dd")));
+            }
+
+            try
+            {
+                int rows = db.Database.ExecuteSqlRaw(
+                    "DELETE FROM admin.reservation " +
+                    "WHERE identification = {0} " +
+                    "AND check_in_date = {1}", patientId, checkInDate);
+            }
+            catch (PostgresException pgException)
+            {
+                switch (pgException.SqlState)
+                {
+                    case "22001":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Some of values inserted are too long."));
+                    default:
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Unknown error"));
+                }
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            return m;
         }
     }
 }

@@ -54,16 +54,6 @@ CREATE TABLE doctor.Medical_Procedures (
   PRIMARY KEY(Name)
 );
 
-CREATE TABLE admin.Reservation (
-  Identification VARCHAR(12),
-  Check_In_Date DATE,
-  Check_Out_Date DATE /*Store Procedure*/,
-  ID_Bed INT,
-  PRIMARY KEY(Identification, Check_In_Date),
-  FOREIGN KEY (Identification) REFERENCES admin.Patient (Identification) ON UPDATE CASCADE,
-  FOREIGN KEY (ID_Bed) REFERENCES doctor.Bed (ID_Bed) ON UPDATE CASCADE
-);
-
 CREATE TABLE doctor.Medical_Room (
   ID_Room INT CHECK ( ID_Room > 0 ),
   Floor_Number SMALLINT NOT NULL,
@@ -79,6 +69,16 @@ CREATE TABLE doctor.Bed (
   ID_Room INT,
   PRIMARY KEY (ID_Bed),
   FOREIGN KEY (ID_Room) REFERENCES doctor.Medical_Room (ID_Room) ON UPDATE CASCADE
+);
+
+CREATE TABLE admin.Reservation (
+  Identification VARCHAR(12),
+  Check_In_Date DATE,
+  Check_Out_Date DATE /*Store Procedure*/,
+  ID_Bed INT,
+  PRIMARY KEY(Identification, Check_In_Date),
+  FOREIGN KEY (Identification) REFERENCES admin.Patient (Identification) ON UPDATE CASCADE,
+  FOREIGN KEY (ID_Bed) REFERENCES doctor.Bed (ID_Bed) ON UPDATE CASCADE
 );
 
 CREATE TABLE doctor.Clinic_Record (
@@ -122,7 +122,7 @@ CREATE TABLE doctor.Medical_Procedure_Reservation (
   Check_In_Date DATE,
   Name VARCHAR(50),
   PRIMARY KEY (Identification, Check_In_Date, Name),
-  FOREIGN KEY (Identification, Check_In_Date) REFERENCES admin.reservation (Identification, Check_In_Date) ON UPDATE CASCADE,
+  FOREIGN KEY (Identification, Check_In_Date) REFERENCES admin.reservation (Identification, Check_In_Date) ON UPDATE CASCADE ON DELETE CASCADE,
   FOREIGN KEY (Name) REFERENCES doctor.medical_procedures (Name)
 );
 
@@ -492,7 +492,7 @@ BEGIN
 END
 $$;
 
-INSERT INTO doctor.medical_equipment(serial_number, name, stock, provider)
+/*INSERT INTO doctor.medical_equipment(serial_number, name, stock, provider)
 VALUES
        ('lq-3456', 'luces quirurgicas', 76, 'Empresa A'),
        ('ul-4365', 'ultrasonidos', 34, 'Empresa B'),
@@ -511,7 +511,7 @@ VALUES
        ('histerectomia', 40),
        ('cirugia para lumbagia', 50),
        ('mastectomia', 30),
-       ('amigdalectomia', 22);
+       ('amigdalectomia', 22);*/
 
 select id_bed
 from doctor.bed
@@ -520,5 +520,13 @@ from admin.reservation
 where ('2020-11-01'::Date, '2020-11-30'::Date)
 overlaps
       (check_in_date, check_out_date));
+
+call create_procedure_for_reservation('764003088', '2020-11-01', true, 'ablacion');
+
+delete from admin.reservation
+where identification = '764003088'
+and check_in_date = '2020-11-01';
+
+
 
 
