@@ -2,6 +2,12 @@
 
 namespace HospiTec_Server.CotecModels
 {
+    /// <summary>
+    /// This class is for manage the database of project CoTEC-2020
+    /// This class use Entity Framework Core.
+    /// See https://github.com/CE-DB/CoTEC2020-DBServer for more information
+    /// about the project.
+    /// </summary>
     public class CoTEC_DBContext : DbContext
     {
         public CoTEC_DBContext()

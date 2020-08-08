@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 
 namespace HospiTec_Server.Logic.Graphql.Types
 {
+    /// <summary>
+    /// Maps the fields of the graphql type for the bed entity
+    /// </summary>
     public class BedType : ObjectType<Bed>
     {
         protected override void Configure(IObjectTypeDescriptor<Bed> descriptor)
@@ -29,6 +32,8 @@ namespace HospiTec_Server.Logic.Graphql.Types
             descriptor.Field("equipment")
                 .Type<ListType<NonNullType<EquipmentType>>>()
                 .Resolver(ctx => {
+
+                    //This gets the equipment telated with this bed.
 
                     return ctx.Service<hospitecContext>()
                         .MedicalEquipmentBed

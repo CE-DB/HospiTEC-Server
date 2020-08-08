@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace HospiTec_Server.CotecModels
 {
+    /// <summary>
+    /// This class maps the patient entitiy in the database of CoTEC-2020
+    /// </summary>
     public class Patient
     {
         public Patient()

@@ -83,7 +83,7 @@ CREATE TABLE doctor.Bed (
 
 CREATE TABLE doctor.Clinic_Record (
   Identification VARCHAR(12),
-  Pathology_Name VARCHAR(30),
+  Pathology_Name VARCHAR(100),
   Diagnostic_Date DATE,
   Treatment VARCHAR(1000),
   PRIMARY KEY (Identification, Pathology_Name, Diagnostic_Date),
@@ -108,7 +108,7 @@ CREATE TABLE doctor.Medical_Equipment_Bed (
 
 CREATE TABLE doctor.Medical_Procedure_Record(
   Identification varchar(12),
-  Pathology_Name VARCHAR(30),
+  Pathology_Name VARCHAR(100),
   Diagnostic_Date DATE,
   Procedure_Name VARCHAR(50),
   Operation_Execution_Date DATE,
@@ -314,7 +314,7 @@ BEGIN
     AND check_in_date = checkInDate;
 
     IF (select COUNT(*) FROM dates) < 1 THEN
-        RAISE EXCEPTION 'No reservation match with data provided, please insert a reservation first p:% pr:%', patientId, procedureName;
+        RAISE EXCEPTION 'No reservation match with data provided, please insert a reservation first';
     end if;
 
     IF (select COUNT(*)
@@ -492,24 +492,15 @@ BEGIN
 END
 $$;
 
-SELECT person.identification
-FROM admin.person FULL OUTER JOIN ADMIN.Patient ON person.identification = patient.identification
-
-call update_reserved_check_in_date(
-    'N7854923',
-    '2020-08-07',
-    '2020-08-20',
-    false);
-
 INSERT INTO doctor.medical_equipment(serial_number, name, stock, provider)
 VALUES
-       ('10', 'luces quirurgicas', 76, 'Empresa A'),
-       ('20', 'ultrasonidos', 34, 'Empresa B'),
-       ('30', 'esterilizadores', 65, 'Empresa C'),
-       ('40', 'desfibriladores', 2, 'Empresa A'),
-       ('50', 'monitores', 98, 'Empresa B'),
-       ('60', 'respiradores artificiales', 76, 'Empresa C'),
-       ('70', 'electrocardiografos', 23, 'Empresa A');
+       ('lq-3456', 'luces quirurgicas', 76, 'Empresa A'),
+       ('ul-4365', 'ultrasonidos', 34, 'Empresa B'),
+       ('es-4325', 'esterilizadores', 65, 'Empresa C'),
+       ('de-9834', 'desfibriladores', 2, 'Empresa A'),
+       ('mo-4376', 'monitores', 98, 'Empresa B'),
+       ('ra-3485', 'respiradores artificiales', 76, 'Empresa C'),
+       ('el-4397', 'electrocardiografos', 23, 'Empresa A');
 
 INSERT INTO doctor.medical_procedures(name, recovering_days)
 VALUES
@@ -521,5 +512,13 @@ VALUES
        ('cirugia para lumbagia', 50),
        ('mastectomia', 30),
        ('amigdalectomia', 22);
+
+select id_bed
+from doctor.bed
+where id_bed not in (select distinct reservation.id_bed
+from admin.reservation
+where ('2020-11-01'::Date, '2020-11-30'::Date)
+overlaps
+      (check_in_date, check_out_date));
 
 

@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 
 namespace HospiTec_Server
 {
+    /// <summary>
+    /// This handles the contants used in the project.
+    /// </summary>
     public class Constants
     {
         public const string adminRole = "admin";

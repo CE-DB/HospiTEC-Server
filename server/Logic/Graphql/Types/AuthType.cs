@@ -2,6 +2,9 @@
 
 namespace HospiTec_Server.Logic.Graphql.Types
 {
+    /// <summary>
+    /// Maps the fields of the login result.
+    /// </summary>
     public class AuthType : ObjectType<Auth>
     {
         protected override void Configure(IObjectTypeDescriptor<Auth> descriptor)

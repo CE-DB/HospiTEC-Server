@@ -4,6 +4,9 @@ using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace HospiTec_Server.database.DBModels
 {
+    /// <summary>
+    /// This class is for manage entities in the database.
+    /// </summary>
     public partial class hospitecContext : DbContext
     {
         public hospitecContext()

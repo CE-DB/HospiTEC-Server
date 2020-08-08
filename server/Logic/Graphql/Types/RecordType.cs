@@ -3,6 +3,9 @@ using HotChocolate.Types;
 
 namespace HospiTec_Server.Logic.Graphql.Types
 {
+    /// <summary>
+    /// This maps the fields of the graphql type for the clinical record entity
+    /// </summary>
     public class RecordType : ObjectType<ClinicRecord>
     {
         protected override void Configure(IObjectTypeDescriptor<ClinicRecord> descriptor)

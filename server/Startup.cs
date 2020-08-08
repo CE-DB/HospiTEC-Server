@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using HotChocolate;
@@ -33,6 +32,7 @@ namespace HospiTec_Server
             services.AddCors();
             services.AddControllers();
 
+            /// This generates the parameters of validation for JWT Tokens sended to this server
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(config =>
                 {
@@ -51,10 +51,9 @@ namespace HospiTec_Server
                         IssuerSigningKey = key,
                         ClockSkew = TimeSpan.Zero
                     };
-
-                    //config.SaveToken = true;
                 });
 
+            ///This adds the policies for role admin, doctor, patient and nurse
             services.AddAuthorization(x =>
             {
                 x.AddPolicy(Constants.adminRole, builder =>
@@ -86,17 +85,22 @@ namespace HospiTec_Server
                 );
             });
 
+            /// This adds the DB Context of hospitec database to services available for use in other classes.
             services
               .AddDbContext<hospitecContext>(options =>
                 options.UseNpgsql(Configuration.GetConnectionString("postgresql")));
 
+            /// This adds the DB Context of CoTEC-2020 database to services available for use in other classes.
             services
               .AddDbContext<CotecModels.CoTEC_DBContext>(options =>
                 options.UseSqlServer(Configuration.GetConnectionString("sqlserver")));
 
+            /// This adds the controller for mongodb database to services available for use in other classes.
             services
                 .AddSingleton<MongoDatabase>();
-
+            
+            /// This configures the graphql service with the query an mutation class 
+            /// Also, enbales the security policies.
             services
                 .AddDataLoaderRegistry()
                 .AddGraphQL(SchemaBuilder
@@ -113,13 +117,9 @@ namespace HospiTec_Server
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-
             app.UseAuthentication();
 
+            /// This allows any client to connect to server
             app.UseCors(builder => builder
                 .AllowAnyOrigin()
                 .AllowAnyMethod()
@@ -130,9 +130,6 @@ namespace HospiTec_Server
             {
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
             });
-
-
-            //app.UseHttpsRedirection();
 
             app.UseRouting();
 

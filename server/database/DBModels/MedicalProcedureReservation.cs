@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace HospiTec_Server.database.DBModels
 {
+    /// <summary>
+    /// This class maps the entity Medical procedure reservation
+    /// </summary>
     public partial class MedicalProcedureReservation
     {
         public string Identification { get; set; }

@@ -5,6 +5,9 @@ using System.Linq;
 
 namespace HospiTec_Server.Logic.Graphql.Types
 {
+    /// <summary>
+    /// This maps the fields of the graphql type for the reservation entity
+    /// </summary>
     public class ReservationType : ObjectType<Reservation>
     {
         protected override void Configure(IObjectTypeDescriptor<Reservation> descriptor)
@@ -30,13 +33,14 @@ namespace HospiTec_Server.Logic.Graphql.Types
                 .Type<ListType<ProcedureType>>()
                 .Resolver(ctx => {
 
+                    /// This gets the medical procedures related with this reservation.
                     return ctx.Service<hospitecContext>()
                         .MedicalProcedureReservation
                         .Where(e => e.Identification.Equals(ctx.Parent<Reservation>().Identification)
                                     && e.CheckInDate.Equals(ctx.Parent<Reservation>().CheckInDate))
                         .Include(e => e.NameNavigation)
                         .Select(e => e.NameNavigation)
-                        .ToListAsync();
+                        .ToList();
 
                 });
         }       

@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace HospiTec_Server.Logic.Graphql.Types
 {
+    /// <summary>
+    /// This maps the fields of the graphql type for the medical procedure entity
+    /// </summary>
     public class ProcedureType : ObjectType<MedicalProcedures>
     {
         protected override void Configure(IObjectTypeDescriptor<MedicalProcedures> descriptor)

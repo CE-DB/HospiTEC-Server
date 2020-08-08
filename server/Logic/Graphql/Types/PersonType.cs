@@ -3,6 +3,9 @@ using HotChocolate.Types;
 
 namespace HospiTec_Server.Logic.Graphql.Types
 {
+    /// <summary>
+    /// This maps the fields of the graphql type for the person entity
+    /// </summary>
     public class PersonType : ObjectType<Person>
     {
         protected override void Configure(IObjectTypeDescriptor<Person> descriptor)
@@ -35,6 +38,7 @@ namespace HospiTec_Server.Logic.Graphql.Types
             descriptor.Field(e => e.BirthDate)
                 .Type<DateType>();
 
+            //This field is to mark the patients who are from CoTEC-2020 database
             descriptor.Field(e => e.External)
                 .Type<NonNullType<BooleanType>>();
         }

@@ -14,13 +14,14 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using HospiTec_Server.database;
 using HospiTec_Server.database.DBModels;
+using HotChocolate.AspNetCore.Authorization;
 
 namespace HospiTec_Server.Logic.Graphql
 {
     public class Mutation
     {
         /// <summary>
-        /// This is for make an error to throw using a list, in this way you can throw many errors at once.
+        /// This is for make custom errors and bypass the database code an error
         /// </summary>
         /// <param name="sqlException">The exception object from Database.</param>
         /// <param name="message">The message for user.</param>
@@ -37,6 +38,13 @@ namespace HospiTec_Server.Logic.Graphql
                            .Build();
         }
 
+        /// <summary>
+        /// This is for make customized errors, using custom code and messages
+        /// </summary>
+        /// <param name="code"></param>
+        /// <param name="message"></param>
+        /// <param name="args"></param>
+        /// <returns></returns>
         private IError CustomErrorBuilder(string code,
             string message,
             params object[] args)
@@ -48,11 +56,29 @@ namespace HospiTec_Server.Logic.Graphql
                            .Build();
         }
 
+        /// <summary>
+        /// This function create patients.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="input">This handle the information necesary to make the insertion of the patient.</param>
+        /// <returns>The model of the patient inserted.</returns>
         [GraphQLType(typeof(PersonType))]
         public async Task<Person> createPatient (
         [Service] hospitecContext db,
         [GraphQLNonNullType] CreatePersonInput input)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (POST)", time));
+            s.AppendLine(string.Format("{0}: Operation = Create patient {1}", time, input.id));
+
+            Console.WriteLine(s.ToString());
+
             List<IError> errors = new List<IError>();
 
             if (string.IsNullOrEmpty(input.id))
@@ -162,13 +188,32 @@ namespace HospiTec_Server.Logic.Graphql
             return p;
         }
 
-        //[Authorize(Policy = Constants.patientRole)]
+        /// <summary>
+        /// This function adds a password to specfic patient.
+        /// </summary>
+        /// <param name="patientId">The identification code of the patient</param>
+        /// <param name="password">The password of the patient.</param>
+        /// <param name="db"></param>
+        /// <returns>The model of the patient specified.</returns>
         [GraphQLType(typeof(PersonType))]
         public async Task<Person> addPassword(
             [GraphQLNonNullType] string patientId,
             [GraphQLNonNullType] string password,
             [Service] hospitecContext db)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (POST)", time));
+            s.AppendLine(string.Format("{0}: Operation = Add password to patient {1}", time, patientId));
+
+            Console.WriteLine(s.ToString());
+
+
             List<IError> errors = new List<IError>();
 
             if (string.IsNullOrEmpty(patientId))
@@ -237,11 +282,32 @@ namespace HospiTec_Server.Logic.Graphql
                 .FirstOrDefault();
         }
 
+        /// <summary>
+        /// This updates the patient personal info, except the password.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="input">This handles the patient indetifiying info and the fields to be updated.</param>
+        /// <returns>The patient person info updated.</returns>
+        //[Authorize(Policy = Constants.doctorRole)]
+        //[Authorize(Policy = Constants.patientRole)]
         [GraphQLType(typeof(PersonType))]
         public async Task<Person> updatePatient(
             [Service] hospitecContext db,
             [GraphQLNonNullType] UpdatePersonInput input)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (PUT)", time));
+            s.AppendLine(string.Format("{0}: Operation = Update patient {1}", time, input.oldId));
+
+            Console.WriteLine(s.ToString());
+
+
             List<IError> errors = new List<IError>();
 
             if (string.IsNullOrEmpty(input.oldId))
@@ -322,11 +388,32 @@ namespace HospiTec_Server.Logic.Graphql
                 string.IsNullOrEmpty(input.newId) ? input.oldId : input.newId));
         }
 
+        /// <summary>
+        /// This deletes a patient and all his related info (clinica records, reservations, etc.)
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="id">The identification code of patient</param>
+        /// <returns>The patient object with related info.</returns>
+        //[Authorize(Policy = Constants.doctorRole)]
+        //[Authorize(Policy = Constants.patientRole)]
         [GraphQLType(typeof(PersonType))]
         public async Task<Person> deletePatient(
             [Service] hospitecContext db,
             [GraphQLNonNullType] string id)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (DELETE)", time));
+            s.AppendLine(string.Format("{0}: Operation = Delete patient {1}", time, id));
+
+            Console.WriteLine(s.ToString());
+
+
 
             if (string.IsNullOrEmpty(id))
             {
@@ -397,11 +484,32 @@ namespace HospiTec_Server.Logic.Graphql
             return p;
         }
 
+        /// <summary>
+        /// This function deletes the personal info of specific staff member, this function must be executed after
+        /// the function deleteStaff.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="id">The identification code of the staff member</param>
+        /// <returns>An object with all info about the staff member.</returns>
+        //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(PersonType))]
         public async Task<Person> deleteStaffPerson(
             [Service] hospitecContext db,
             [GraphQLNonNullType] string id)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (DELETE)", time));
+            s.AppendLine(string.Format("{0}: Operation = Delete staff member {1}", time, id));
+
+            Console.WriteLine(s.ToString());
+
+
 
             if (string.IsNullOrEmpty(id))
             {
@@ -453,11 +561,31 @@ namespace HospiTec_Server.Logic.Graphql
             return p;
         }
 
+        /// <summary>
+        /// This function createe
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        //[Authorize(Policy = Constants.doctorRole)]
         [GraphQLType(typeof(RecordType))]
         public async Task<ClinicRecord> createRecord(
             [Service] hospitecContext db,
             [GraphQLNonNullType] CreateRecordInput input)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (POST)", time));
+            s.AppendLine(string.Format("{0}: Operation = Create clinical record for patient {1}", time, input.patientId));
+
+            Console.WriteLine(s.ToString());
+
+
             List<IError> errors = new List<IError>();
 
             if (string.IsNullOrEmpty(input.patientId))
@@ -535,11 +663,32 @@ namespace HospiTec_Server.Logic.Graphql
             return p;
         }
 
+        /// <summary>
+        /// This creates a procedure related with a specific clinic record entry of a patient
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="input">This handles the related identifiying information of patient
+        /// and the procedure to insert.</param>
+        /// <returns>The clinic record related</returns>
+        //[Authorize(Policy = Constants.doctorRole)]
         [GraphQLType(typeof(RecordType))]
         public async Task<ClinicRecord> createAppointment(
             [Service] hospitecContext db,
             [GraphQLNonNullType] CreateAppointmentInput input)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (POST)", time));
+            s.AppendLine(string.Format("{0}: Operation = Attach procedure '{1}' to clinical record of patient {2}", time, input.procedureName, input.patientId));
+
+            Console.WriteLine(s.ToString());
+
+
             List<IError> errors = new List<IError>();
 
             if (string.IsNullOrEmpty(input.patientId))
@@ -642,12 +791,31 @@ namespace HospiTec_Server.Logic.Graphql
                 .FirstOrDefaultAsync();
         }
 
-
+        /// <summary>
+        /// This modifies a specific clinic record entry of a patient.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="input">This handles the identifiying information for the entry and the information to update.</param>
+        /// <returns>The clinic record updated.</returns>
+        //[Authorize(Policy = Constants.doctorRole)]
         [GraphQLType(typeof(RecordType))]
         public async Task<ClinicRecord> updateRecord(
             [Service] hospitecContext db,
             [GraphQLNonNullType] UpdateRecordInput input)   
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (PUT)", time));
+            s.AppendLine(string.Format("{0}: Operation = Update clinical record of patient {1}", time, input.patientId));
+
+            Console.WriteLine(s.ToString());
+
+
             List<IError> errors = new List<IError>();
 
             if (string.IsNullOrEmpty(input.patientId))
@@ -743,6 +911,15 @@ namespace HospiTec_Server.Logic.Graphql
                 .FirstOrDefaultAsync();
         }
 
+        /// <summary>
+        /// This deletes a specific clinic record entry.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="patientId">The patient identification code.</param>
+        /// <param name="pathologyName">The pathology name</param>
+        /// <param name="diagnosticDate">The pathology diagnostic date.</param>
+        /// <returns>The clinic record deleted with the procedures related./returns>
+        //[Authorize(Policy = Constants.doctorRole)]
         [GraphQLType(typeof(RecordType))]
         public async Task<ClinicRecord> deleteRecord(
             [Service] hospitecContext db,
@@ -750,6 +927,19 @@ namespace HospiTec_Server.Logic.Graphql
             [GraphQLNonNullType] string pathologyName,
             [GraphQLNonNullType] DateTime diagnosticDate)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (DELETE)", time));
+            s.AppendLine(string.Format("{0}: Operation = Delete clinical record of patient {1}", time, patientId));
+
+            Console.WriteLine(s.ToString());
+
+
             List<IError> errors = new List<IError>();
 
             if (string.IsNullOrEmpty(patientId))
@@ -822,11 +1012,31 @@ namespace HospiTec_Server.Logic.Graphql
             return p;
         }
 
+        /// <summary>
+        /// This updates a specific medical procedure related with a clinic record entry.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="input">The information to locate the clinic record and the procedures to delete or to add.</param>
+        /// <returns></returns>
+        //[Authorize(Policy = Constants.doctorRole)]
         [GraphQLType(typeof(RecordType))]
         public async Task<ClinicRecord> updateAppointment(
             [Service] hospitecContext db,
             [GraphQLNonNullType] UpdateAppointmentInput input)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (PUT)", time));
+            s.AppendLine(string.Format("{0}: Operation = Update procedures in clinic record of patient {1}", time, input.patientId));
+
+            Console.WriteLine(s.ToString());
+
+
             List<IError> errors = new List<IError>();
 
             if (string.IsNullOrEmpty(input.patientId))
@@ -949,12 +1159,33 @@ namespace HospiTec_Server.Logic.Graphql
                 .FirstOrDefaultAsync();
         }
 
+        /// <summary>
+        /// This validates the user inserted and generates a JWT Token to grant access to resources
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="id"></param>
+        /// <param name="password"></param>
+        /// <param name="role"></param>
+        /// <returns></returns>
         public async Task<Auth> authentication(
             [Service] hospitecContext db,
             [GraphQLNonNullType] string id,
             [GraphQLNonNullType] string password,
             string role)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (POST)", time));
+            s.AppendLine(string.Format("{0}: Operation = Authentication of person {1}", time, id));
+
+            Console.WriteLine(s.ToString());
+
+
             if (string.IsNullOrEmpty(id))
             {
                 throw new QueryException(CustomErrorBuilder(
@@ -1057,12 +1288,33 @@ namespace HospiTec_Server.Logic.Graphql
             }
         }
 
+        /// <summary>
+        /// This creates a new medical procedure
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="name">The name of new procedure</param>
+        /// <param name="recoveringDays">The days that a patient requires to recover</param>
+        /// <returns>The procedure object created.</returns>
+        //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(ProcedureType))]
         public async Task<MedicalProcedures> createProcedure(
             [Service] hospitecContext db,
             [GraphQLNonNullType] string name,
             [GraphQLNonNullType] short recoveringDays)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (POST)", time));
+            s.AppendLine(string.Format("{0}: Operation = Create medical procedure '{1}'", time, name));
+
+            Console.WriteLine(s.ToString());
+
+
             List<IError> errors = new List<IError>();
 
             if (string.IsNullOrEmpty(name))
@@ -1124,6 +1376,15 @@ namespace HospiTec_Server.Logic.Graphql
             return m;
         }
 
+        /// <summary>
+        /// This updates the information of specified procedure.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="oldName">The name of the medical procedure to update</param>
+        /// <param name="newName">The new name of the medical procedure</param>
+        /// <param name="recoveringDays">The new recovering days value, this and the new name can be ommited.</param>
+        /// <returns>The procedure object updated.</returns>
+        //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(ProcedureType))]
         public async Task<MedicalProcedures> updateProcedure(
             [Service] hospitecContext db,
@@ -1131,6 +1392,19 @@ namespace HospiTec_Server.Logic.Graphql
             string newName,
             short? recoveringDays)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (PUT)", time));
+            s.AppendLine(string.Format("{0}: Operation = Update medical procedure '{1}'", time, oldName));
+
+            Console.WriteLine(s.ToString());
+
+
             List<IError> errors = new List<IError>();
 
             if (string.IsNullOrEmpty(oldName))
@@ -1217,11 +1491,31 @@ namespace HospiTec_Server.Logic.Graphql
                 .FirstOrDefaultAsync(p => p.Name.Equals(string.IsNullOrEmpty(newName) ? oldName : newName));
         }
 
+        /// <summary>
+        /// This deletes the medical procedure specified.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="name">The name of the procedure to delete</param>
+        /// <returns>The object of the medical procedure deleted.</returns>
+        //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(ProcedureType))]
         public async Task<MedicalProcedures> deleteProcedure(
             [Service] hospitecContext db,
             [GraphQLNonNullType] string name)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (DELETE)", time));
+            s.AppendLine(string.Format("{0}: Operation = Delete medical procedure '{1}'", time, name));
+
+            Console.WriteLine(s.ToString());
+
+
             List<IError> errors = new List<IError>();
 
             if (string.IsNullOrEmpty(name))
@@ -1285,11 +1579,31 @@ namespace HospiTec_Server.Logic.Graphql
             return m;
         }
 
+        /// <summary>
+        /// This adds a new medical room
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="input">This handles the information to insert.</param>
+        /// <returns>The medical room object created.</returns>
+        //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(MedicalRoomType))]
         public async Task<MedicalRoom> addMedicalRoom(
             [Service] hospitecContext db,
             [GraphQLNonNullType] CreateMedicalRoomInput input)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (POST)", time));
+            s.AppendLine(string.Format("{0}: Operation = Create medical room {1}", time, input.id));
+
+            Console.WriteLine(s.ToString());
+
+
             List<IError> errors = new List<IError>();
 
             if (string.IsNullOrEmpty(input.name))
@@ -1374,11 +1688,31 @@ namespace HospiTec_Server.Logic.Graphql
             return m;
         }
 
+        /// <summary>
+        /// This updates the medical room specified.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="input">The identifiying information of the medical room to update and the fields to update.</param>
+        /// <returns>The medical room updated.</returns>
+        //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(MedicalRoomType))]
         public async Task<MedicalRoom> updateMedicalRoom(
             [Service] hospitecContext db,
             [GraphQLNonNullType] UpdateMedicalRoomInput input)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (PUT)", time));
+            s.AppendLine(string.Format("{0}: Operation = Update medical room {1}", time, input.oldId));
+
+            Console.WriteLine(s.ToString());
+
+
             List<IError> errors = new List<IError>();
 
             if (input.oldId < 1)
@@ -1473,6 +1807,15 @@ namespace HospiTec_Server.Logic.Graphql
                 .FirstOrDefaultAsync(p => p.IdRoom.Equals(input.newId.HasValue ? input.newId : input.oldId));
         }
 
+        /// <summary>
+        /// This creates new beds.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="id">The id number for the new bed.</param>
+        /// <param name="isICU">True if the bed is for intensive care unite or false if it's not.</param>
+        /// <param name="idRoom">The medical room where the bed is, this is optional</param>
+        /// <returns>The bed object created.</returns>
+        //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(BedType))]
         public async Task<Bed> createBed(
             [Service] hospitecContext db,
@@ -1480,6 +1823,19 @@ namespace HospiTec_Server.Logic.Graphql
             [GraphQLNonNullType] bool isICU,
             int? idRoom)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (POST)", time));
+            s.AppendLine(string.Format("{0}: Operation = Create Bed {1}", time, id));
+
+            Console.WriteLine(s.ToString());
+
+
             Bed m;
             try
             {
@@ -1548,11 +1904,29 @@ namespace HospiTec_Server.Logic.Graphql
             return null;
         }
 
+        /// <summary>
+        /// This updates the specified bed.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="input">The information related with the bed to update.</param>
+        /// <returns>The bed object updated.</returns>
         [GraphQLType(typeof(BedType))]
         public async Task<Bed> updateBed(
             [Service] hospitecContext db,
             [GraphQLNonNullType] UpdateBedInput input)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (PUT)", time));
+            s.AppendLine(string.Format("{0}: Operation = Update bed {1}", time, input.oldBedId));
+
+            Console.WriteLine(s.ToString());
+
 
             StringBuilder sql = new StringBuilder();
 
@@ -1633,11 +2007,31 @@ namespace HospiTec_Server.Logic.Graphql
                 .FirstOrDefaultAsync(p => p.IdBed.Equals(input.newBedId.HasValue ? input.newBedId : input.oldBedId));
         }
 
+        /// <summary>
+        /// This deleted the specified bed.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="bedId">The id number of the bed to delete.</param>
+        /// <returns>The bed object deleted.</returns>
+        //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(BedType))]
         public async Task<Bed> deleteBed(
             [Service] hospitecContext db,
             [GraphQLNonNullType] int bedId)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (DELETE)", time));
+            s.AppendLine(string.Format("{0}: Operation = Delete bed {1}", time, bedId));
+
+            Console.WriteLine(s.ToString());
+
+
             if (!db.Bed.Any(p => p.IdBed.Equals(bedId)))
             {
                 throw new QueryException(CustomErrorBuilder(
@@ -1683,12 +2077,32 @@ namespace HospiTec_Server.Logic.Graphql
             return m;
         }
 
+        /// <summary>
+        /// This adds new medical equipment to specified bed.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="bedId">The id number of the bed.</param>
+        /// <param name="equipmentSN">The serial number of the equipment tool selected.</param>
+        /// <returns>The bed updated with the new equipment</returns>
+        //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(BedType))]
         public async Task<Bed> addEquipment(
             [Service] hospitecContext db,
             [GraphQLNonNullType] int bedId,
             [GraphQLNonNullType] string equipmentSN)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (POST)", time));
+            s.AppendLine(string.Format("{0}: Operation = Attach equipment '{1}' to bed {2}", time, equipmentSN, bedId));
+
+            Console.WriteLine(s.ToString());
+
 
             if (string.IsNullOrEmpty(equipmentSN))
             {
@@ -1746,6 +2160,15 @@ namespace HospiTec_Server.Logic.Graphql
             return await db.Bed.FirstOrDefaultAsync(p => p.IdBed.Equals(bedId));
         }
 
+        /// <summary>
+        /// This changes the equipment of specified bed.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="bedId">The id of the bed to change</param>
+        /// <param name="newEquipmentSN">The serial numbers of all equipment to add.</param>
+        /// <param name="deletedEquipmentSN">The serial numbers of all equipment to delete.</param>
+        /// <returns>The bed updated.</returns>
+        //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(BedType))]
         public async Task<Bed> updateBedEquipment(
             [Service] hospitecContext db,
@@ -1753,6 +2176,19 @@ namespace HospiTec_Server.Logic.Graphql
             ICollection<string> newEquipmentSN,
             ICollection<string> deletedEquipmentSN)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (PUT)", time));
+            s.AppendLine(string.Format("{0}: Operation = Update equipment for bed {1}", time, bedId));
+
+            Console.WriteLine(s.ToString());
+
+
             if (!db.Bed.Any(p => p.IdBed.Equals(bedId)))
             {
                 throw new QueryException(CustomErrorBuilder(
@@ -1829,11 +2265,31 @@ namespace HospiTec_Server.Logic.Graphql
                 .FirstOrDefaultAsync(p => p.IdBed.Equals(bedId));
         }
 
+        /// <summary>
+        /// This creates a new staff person entity.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="input">The personal info for the new staff member person.</param>
+        /// <returns>The staff object created.</returns>
+        //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(StaffType))]
         public async Task<Staff> createStaffPerson(
         [Service] hospitecContext db,
         [GraphQLNonNullType] CreatePersonInput input)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (POST)", time));
+            s.AppendLine(string.Format("{0}: Operation = Create staff member person {1}", time, input.id));
+
+            Console.WriteLine(s.ToString());
+
+
             List<IError> errors = new List<IError>();
 
             if (string.IsNullOrEmpty(input.id))
@@ -1939,12 +2395,32 @@ namespace HospiTec_Server.Logic.Graphql
             };
         }
 
-
+        /// <summary>
+        /// This create the staff member as it is.
+        /// This has to be executed after createPersonStaff function
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="input">The information related with the staff member (admission date, password, etc.)</param>
+        /// <returns>The staff created</returns>
+        //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(StaffType))]
         public async Task<Staff> createStaff(
         [Service] hospitecContext db,
         [GraphQLNonNullType] CreateStaffInput input)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (POST)", time));
+            s.AppendLine(string.Format("{0}: Operation = Create staff member info for person {1}", time, input.id));
+
+            Console.WriteLine(s.ToString());
+
+
             List<IError> errors = new List<IError>();
 
             if (string.IsNullOrEmpty(input.id))
@@ -2015,11 +2491,31 @@ namespace HospiTec_Server.Logic.Graphql
             return p;
         }
 
+        /// <summary>
+        /// This updates the personal info of the specified staff member.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="input">The identifiying information and fields to update of the staff member</param>
+        /// <returns>The staff member updated.</returns>
+        //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(StaffType))]
         public async Task<Staff> updateStaffPerson(
             [Service] hospitecContext db,
             [GraphQLNonNullType] UpdatePersonInput input)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (PUT)", time));
+            s.AppendLine(string.Format("{0}: Operation = Update staff personal info for member {1}", time, input.oldId));
+
+            Console.WriteLine(s.ToString());
+
+
             List<IError> errors = new List<IError>();
 
             if (string.IsNullOrEmpty(input.oldId))
@@ -2113,11 +2609,31 @@ namespace HospiTec_Server.Logic.Graphql
             }
         }
 
+        /// <summary>
+        /// This updates the information related with the staff member (admission date, role, etc.)
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="input">Identifiying information and fields to update.</param>
+        /// <returns>The updated staff member object.</returns>
+        //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(StaffType))]
         public async Task<Staff> updateStaff(
             [Service] hospitecContext db,
             [GraphQLNonNullType] UpdateStaffInput input)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (PUT)", time));
+            s.AppendLine(string.Format("{0}: Operation = Update staff information of member {1}", time, input.id));
+
+            Console.WriteLine(s.ToString());
+
+
             List<IError> errors = new List<IError>();
 
             if (string.IsNullOrEmpty(input.oldRole))
@@ -2213,12 +2729,32 @@ namespace HospiTec_Server.Logic.Graphql
                                             && p.Name.Equals(string.IsNullOrEmpty(input.newRole) ? input.oldRole : input.newRole));
         }
 
+        /// <summary>
+        /// This deletes the staff member with all his personal information.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="id">The identification number of the staff member.</param>
+        /// <param name="role">The role of the member.</param>
+        /// <returns>The staff object with all information.</returns>
+        //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(StaffType))]
         public async Task<Staff> deleteStaff(
             [Service] hospitecContext db,
             [GraphQLNonNullType] string id,
             [GraphQLNonNullType] string role)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (DELETE)", time));
+            s.AppendLine(string.Format("{0}: Operation = Delete staff member {1}", time, id));
+
+            Console.WriteLine(s.ToString());
+
 
             if (string.IsNullOrEmpty(id))
             {
@@ -2276,11 +2812,31 @@ namespace HospiTec_Server.Logic.Graphql
             return p;
         }
 
+        /// <summary>
+        /// This creates new medical equipment.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="input">The information to create the equipment.</param>
+        /// <returns>The new medical equipment object.</returns>
+        //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(EquipmentType))]
         public async Task<MedicalEquipment> createEquipment(
             [Service] hospitecContext db,
             [GraphQLNonNullType] CreateEquipmentInput input)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (POST)", time));
+            s.AppendLine(string.Format("{0}: Operation = Create medical equipment '{1}'", time, input.serialNumber));
+
+            Console.WriteLine(s.ToString());
+
+
             List<IError> errors = new List<IError>();
 
             if (string.IsNullOrEmpty(input.serialNumber))
@@ -2367,11 +2923,31 @@ namespace HospiTec_Server.Logic.Graphql
             return m;
         }
 
+        /// <summary>
+        /// This updates the information of a specified equipment.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="input">The information to identify the equipment to update and the fields to update.</param>
+        /// <returns>The equipment object updated.</returns>
+        //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(EquipmentType))]
         public async Task<MedicalEquipment> updateEquipment(
             [Service] hospitecContext db,
             [GraphQLNonNullType] UpdateEquipmentInput input)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (PUT)", time));
+            s.AppendLine(string.Format("{0}: Operation = Update medical equipment '{1}'", time, input.oldSerialNumber));
+
+            Console.WriteLine(s.ToString());
+
+
             if (string.IsNullOrEmpty(input.oldSerialNumber))
             {
                 throw new QueryException(CustomErrorBuilder(
@@ -2455,11 +3031,31 @@ namespace HospiTec_Server.Logic.Graphql
                 .FirstOrDefaultAsync(p => p.SerialNumber.Equals(string.IsNullOrEmpty(input.newSerialNumber) ? input.oldSerialNumber : input.newSerialNumber));
         }
 
+        /// <summary>
+        /// This deletes the specified medical room
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="id">The id number of the specified medical room.</param>
+        /// <returns>The medical room deleted.</returns>
+        //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(MedicalRoomType))]
         public async Task<MedicalRoom> deleteMedicalRoom(
             [Service] hospitecContext db,
             [GraphQLNonNullType] int id)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (DELETE)", time));
+            s.AppendLine(string.Format("{0}: Operation = Delete medical room {1}", time, id));
+
+            Console.WriteLine(s.ToString());
+
+
             MedicalRoom m = await db.MedicalRoom
                 .FirstOrDefaultAsync(p => p.IdRoom.Equals(id));
 
@@ -2498,11 +3094,31 @@ namespace HospiTec_Server.Logic.Graphql
             return m;
         }
 
+        /// <summary>
+        /// This deletes the medical equipment specified.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="serialNumber">The serial number of the equipment specified.</param>
+        /// <returns>The equipment object deleted.</returns>
+        //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(EquipmentType))]
-        public async Task<MedicalEquipment> deleteEquipment(
+        public Task<MedicalEquipment> deleteEquipment(
             [Service] hospitecContext db,
             [GraphQLNonNullType] string serialNumber)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (DELETE)", time));
+            s.AppendLine(string.Format("{0}: Operation = Delete medical equipment {1}", time, serialNumber));
+
+            Console.WriteLine(s.ToString());
+
+
             MedicalEquipment m = db.MedicalEquipment
                 .FirstOrDefault(p => p.SerialNumber.Equals(serialNumber));
 
@@ -2541,11 +3157,31 @@ namespace HospiTec_Server.Logic.Graphql
             return m;
         }
 
+        /// <summary>
+        /// This create a reservation for a specified patient and assigns a bed automatically
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="input">The information related with the reservation.</param>
+        /// <returns></returns>
+        //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(ReservationType))]
         public async Task<Reservation> createReservation(
             [Service] hospitecContext db,
             [GraphQLNonNullType] AddReservationInput input)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (POST)", time));
+            s.AppendLine(string.Format("{0}: Operation = Create reservation for patient {1}", time, input.patientId));
+
+            Console.WriteLine(s.ToString());
+
+
             List<IError> errors = new List<IError>();
 
             if (string.IsNullOrEmpty(input.patientId))
@@ -2620,11 +3256,31 @@ namespace HospiTec_Server.Logic.Graphql
                 .FirstOrDefaultAsync();
         }
 
+        /// <summary>
+        /// This creates procedures for a specified reservation
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="input">The information related with the reservation to update and the procedure to attach.</param>
+        /// <returns>The reservation object updated.</returns>
+        //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(ReservationType))]
         public async Task<Reservation> createProcedureReserved(
             [Service] hospitecContext db,
             [GraphQLNonNullType] AddProcedureReservedInput input)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (POST)", time));
+            s.AppendLine(string.Format("{0}: Operation = Attach procedure to reservation of patient {1}", time, input.patientId));
+
+            Console.WriteLine(s.ToString());
+
+
             List<IError> errors = new List<IError>();
 
             if (string.IsNullOrEmpty(input.patientId))
@@ -2690,11 +3346,31 @@ namespace HospiTec_Server.Logic.Graphql
                 .FirstOrDefaultAsync();
         }
 
+        /// <summary>
+        /// This updates the reservation procedures attached.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="input">The information of the reservation to update and the procedures to add or delete.</param>
+        /// <returns>The reservation object updated.</returns>
+        //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(ReservationType))]
         public async Task<Reservation> updateReservationProcedures(
             [Service] hospitecContext db,
             [GraphQLNonNullType] UpdateReservationProceduresInput input)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (PUT)", time));
+            s.AppendLine(string.Format("{0}: Operation = Update procedures for reservation of patient {1}", time, input.patientId));
+
+            Console.WriteLine(s.ToString());
+
+
             List<IError> errors = new List<IError>();
 
             if (string.IsNullOrEmpty(input.patientId))
@@ -2818,11 +3494,31 @@ namespace HospiTec_Server.Logic.Graphql
                 .FirstOrDefaultAsync();
         }
 
+        /// <summary>
+        /// This udates the check in date of the reservation specified.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="input">The information of the reservation and the new check in date.</param>
+        /// <returns>The reservation object updated.</returns>
+        //[Authorize(Policy = Constants.adminRole)]
         [GraphQLType(typeof(ReservationType))]
         public async Task<Reservation> updateReservationCheckInDate(
             [Service] hospitecContext db,
             [GraphQLNonNullType] UpdateReservationCheckInDate input)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (PUT)", time));
+            s.AppendLine(string.Format("{0}: Operation = Update check in date of reservation for patient {1}", time, input.patientId));
+
+            Console.WriteLine(s.ToString());
+
+
             List<IError> errors = new List<IError>();
 
             if (string.IsNullOrEmpty(input.patientId))
@@ -2889,6 +3585,16 @@ namespace HospiTec_Server.Logic.Graphql
                 .FirstOrDefaultAsync();
         }
 
+        /// <summary>
+        /// This creates a new hospital evaluation entry.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="patientID">The patient identification code who is evaluating</param>
+        /// <param name="category">The category to evaluate.</param>
+        /// <param name="evaluation">The value of the evaluation in scale of 1 to 5.</param>
+        /// <param name="date">The date of the evaluation.</param>
+        /// <returns>A boolean to indicate if the evaluation was inserted or not.</returns>
+        //[Authorize(Policy = Constants.patientRole)]
         public bool HospitalEvaluation(
             [Service] MongoDatabase db,
             [GraphQLNonNullType] string patientID,
@@ -2896,6 +3602,19 @@ namespace HospiTec_Server.Logic.Graphql
             [GraphQLNonNullType] int evaluation,
             [GraphQLNonNullType] DateTime date)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (POST)", time));
+            s.AppendLine(string.Format("{0}: Operation = Create hospital evaluation", time));
+
+            Console.WriteLine(s.ToString());
+
+
             List<IError> errors = new List<IError>();
 
             if (string.IsNullOrEmpty(patientID))
@@ -2910,6 +3629,16 @@ namespace HospiTec_Server.Logic.Graphql
             return db.generateHospitalEvaluation(patientID, category, evaluation, date);
         }
 
+        /// <summary>
+        /// This creates a evaluation of staff member specified.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="patientID">The patient who is making the evaluation.</param>
+        /// <param name="staffID">The staff member identification code who is under evaluation.</param>
+        /// <param name="evaluation">The evaluation value in scale of 1 to 5</param>
+        /// <param name="date">The date of the evaluation.</param>
+        /// <returns>A boolean to indicate if the evaluation was inserted or not.</returns>
+        /// //[Authorize(Policy = Constants.patientRole)]
         public bool staffEvaluation(
             [Service] MongoDatabase db,
             [GraphQLNonNullType] string patientID,
@@ -2917,6 +3646,19 @@ namespace HospiTec_Server.Logic.Graphql
             [GraphQLNonNullType] int evaluation,
             [GraphQLNonNullType] DateTime date)
         {
+            StringBuilder s = new StringBuilder();
+
+            string time = (DateTime.UtcNow
+                                        .AddHours(-6))
+                                        .ToString("yyyy/MM/dd - hh:mm:ss");
+
+            s.AppendLine(string
+                .Format("{0}: Type      = Mutation (POST)", time));
+            s.AppendLine(string.Format("{0}: Operation = Create staff evaluation", time));
+
+            Console.WriteLine(s.ToString());
+
+
             List<IError> errors = new List<IError>();
 
             if (string.IsNullOrEmpty(patientID))
