@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.Extensions.Configuration;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
@@ -11,10 +12,10 @@ namespace HospiTec_Server.database
         public IMongoCollection<StaffEvaluation> staffCollection;
         public IMongoCollection<HospitalEvaluation> hospitalCollection;
         
-        public MongoDatabase()
+        public MongoDatabase(IConfiguration configuration)
         {
 
-            client = new MongoClient("mongodb://172.26.15.187:27017");
+            client = new MongoClient(configuration.GetConnectionString("mongodb"));
             db = client.GetDatabase("hospitec");
             
             this.staffCollection = db.GetCollection<StaffEvaluation>("staffEvaluation");

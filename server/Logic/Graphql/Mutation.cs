@@ -349,8 +349,6 @@ namespace HospiTec_Server.Logic.Graphql
                 db.Remove(p);
 
                 await db.SaveChangesAsync();
-
-
             }
             catch (DbUpdateException ex)
             {
@@ -2941,4 +2939,3 @@ namespace HospiTec_Server.Logic.Graphql
         }
     }
 }
-
