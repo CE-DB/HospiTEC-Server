@@ -1,5 +1,5 @@
 ﻿using HospiTec_Server.CotecModels;
-using HospiTec_Server.DBModels;
+using HospiTec_Server.database.DBModels;
 using HospiTec_Server.Logic.Graphql.Types;
 using HotChocolate;
 using HotChocolate.Types;
@@ -44,9 +44,12 @@ namespace HospiTec_Server.Logic.Graphql
 
         [GraphQLType(typeof(NonNullType<ListType<NonNullType<ReservationType>>>))]
         public async Task<List<Reservation>> reservations(
-            [Service] hospitecContext db)
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] string patientId)
         {
-            return await db.Reservation.ToListAsync();
+            return await db.Reservation
+                .Where(p => p.Identification.Equals(patientId))
+                .ToListAsync();
         }
 
         [GraphQLType(typeof(NonNullType<ListType<NonNullType<RecordType>>>))]

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace HospiTec_Server.DBModels
+namespace HospiTec_Server.database.DBModels
 {
-    public  class Person
+    public partial class Person
     {
         public Person()
         {
@@ -18,9 +18,10 @@ namespace HospiTec_Server.DBModels
         public string Province { get; set; }
         public string Canton { get; set; }
         public string ExactAddress { get; set; }
-        public bool External { get; set; } = false;
 
-        public  Patient Patient { get; set; }
-        public  ICollection<Staff> Staff { get; set; }
+        public bool External { get; set; }
+
+        public virtual Patient Patient { get; set; }
+        public virtual ICollection<Staff> Staff { get; set; }
     }
 }

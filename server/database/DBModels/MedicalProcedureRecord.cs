@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace HospiTec_Server.DBModels
+namespace HospiTec_Server.database.DBModels
 {
-    public  class MedicalProcedureRecord
+    public partial class MedicalProcedureRecord
     {
         public string Identification { get; set; }
         public string PathologyName { get; set; }
@@ -11,7 +11,7 @@ namespace HospiTec_Server.DBModels
         public string ProcedureName { get; set; }
         public DateTime OperationExecutionDate { get; set; }
 
-        public  ClinicRecord ClinicRecord { get; set; }
-        public  MedicalProcedures ProcedureNameNavigation { get; set; }
+        public virtual ClinicRecord ClinicRecord { get; set; }
+        public virtual MedicalProcedures ProcedureNameNavigation { get; set; }
     }
 }

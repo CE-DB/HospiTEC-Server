@@ -2,9 +2,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
-namespace HospiTec_Server.DBModels
+namespace HospiTec_Server.database.DBModels
 {
-    public  class hospitecContext : DbContext
+    public partial class hospitecContext : DbContext
     {
         public hospitecContext()
         {
@@ -15,20 +15,19 @@ namespace HospiTec_Server.DBModels
         {
         }
 
-        public  DbSet<Bed> Bed { get; set; }
-        public  DbSet<ClinicRecord> ClinicRecord { get; set; }
-        public  DbSet<MedicalEquipment> MedicalEquipment { get; set; }
-        public  DbSet<MedicalEquipmentBed> MedicalEquipmentBed { get; set; }
-        public  DbSet<MedicalProcedureRecord> MedicalProcedureRecord { get; set; }
-        public  DbSet<MedicalProcedureReservation> MedicalProcedureReservation { get; set; }
-        public  DbSet<MedicalProcedures> MedicalProcedures { get; set; }
-        public  DbSet<MedicalRoom> MedicalRoom { get; set; }
-        public  DbSet<Patient> Patient { get; set; }
-        public  DbSet<Person> Person { get; set; }
-        public  DbSet<Reservation> Reservation { get; set; }
-        public  DbSet<ReservationBed> ReservationBed { get; set; }
-        public  DbSet<Role> Role { get; set; }
-        public  DbSet<Staff> Staff { get; set; }
+        public virtual DbSet<Bed> Bed { get; set; }
+        public virtual DbSet<ClinicRecord> ClinicRecord { get; set; }
+        public virtual DbSet<MedicalEquipment> MedicalEquipment { get; set; }
+        public virtual DbSet<MedicalEquipmentBed> MedicalEquipmentBed { get; set; }
+        public virtual DbSet<MedicalProcedureRecord> MedicalProcedureRecord { get; set; }
+        public virtual DbSet<MedicalProcedureReservation> MedicalProcedureReservation { get; set; }
+        public virtual DbSet<MedicalProcedures> MedicalProcedures { get; set; }
+        public virtual DbSet<MedicalRoom> MedicalRoom { get; set; }
+        public virtual DbSet<Patient> Patient { get; set; }
+        public virtual DbSet<Person> Person { get; set; }
+        public virtual DbSet<Reservation> Reservation { get; set; }
+        public virtual DbSet<Role> Role { get; set; }
+        public virtual DbSet<Staff> Staff { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -50,7 +49,6 @@ namespace HospiTec_Server.DBModels
                 entity.HasOne(d => d.IdRoomNavigation)
                     .WithMany(p => p.Bed)
                     .HasForeignKey(d => d.IdRoom)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("bed_id_room_fkey");
             });
 
@@ -103,7 +101,7 @@ namespace HospiTec_Server.DBModels
                 entity.Property(e => e.Provider)
                     .IsRequired()
                     .HasColumnName("provider")
-                    .HasMaxLength(50);
+                    .HasMaxLength(200);
 
                 entity.Property(e => e.Stock).HasColumnName("stock");
             });
@@ -124,7 +122,6 @@ namespace HospiTec_Server.DBModels
                 entity.HasOne(d => d.IdBedNavigation)
                     .WithMany(p => p.MedicalEquipmentBed)
                     .HasForeignKey(d => d.IdBed)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("medical_equipment_bed_id_bed_fkey");
 
                 entity.HasOne(d => d.SerialNumberNavigation)
@@ -271,13 +268,12 @@ namespace HospiTec_Server.DBModels
 
             modelBuilder.Entity<Person>(entity =>
             {
+                entity.Ignore(e => e.External);
+
                 entity.HasKey(e => e.Identification)
                     .HasName("person_pkey");
 
                 entity.ToTable("person", "admin");
-
-                entity.Ignore(p => p.External);
-                    
 
                 entity.Property(e => e.Identification)
                     .HasColumnName("identification")
@@ -320,6 +316,7 @@ namespace HospiTec_Server.DBModels
 
             modelBuilder.Entity<Reservation>(entity =>
             {
+
                 entity.HasKey(e => new { e.Identification, e.CheckInDate })
                     .HasName("reservation_pkey");
 
@@ -337,41 +334,18 @@ namespace HospiTec_Server.DBModels
                     .HasColumnName("check_out_date")
                     .HasColumnType("date");
 
+                entity.Property(e => e.IdBed).HasColumnName("id_bed");
+
+                entity.HasOne(d => d.IdBedNavigation)
+                    .WithMany(p => p.Reservation)
+                    .HasForeignKey(d => d.IdBed)
+                    .HasConstraintName("reservation_id_bed_fkey");
+
                 entity.HasOne(d => d.IdentificationNavigation)
                     .WithMany(p => p.Reservation)
                     .HasForeignKey(d => d.Identification)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("reservation_identification_fkey");
-            });
-
-            modelBuilder.Entity<ReservationBed>(entity =>
-            {
-                entity.HasKey(e => new { e.Identification, e.IdBed, e.CheckInDate })
-                    .HasName("reservation_bed_pkey");
-
-                entity.ToTable("reservation_bed", "admin");
-
-                entity.Property(e => e.Identification)
-                    .HasColumnName("identification")
-                    .HasMaxLength(12);
-
-                entity.Property(e => e.IdBed).HasColumnName("id_bed");
-
-                entity.Property(e => e.CheckInDate)
-                    .HasColumnName("check_in_date")
-                    .HasColumnType("date");
-
-                entity.HasOne(d => d.IdBedNavigation)
-                    .WithMany(p => p.ReservationBed)
-                    .HasForeignKey(d => d.IdBed)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("reservation_bed_id_bed_fkey");
-
-                entity.HasOne(d => d.Reservation)
-                    .WithMany(p => p.ReservationBed)
-                    .HasForeignKey(d => new { d.Identification, d.CheckInDate })
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("reservation_bed_identification_check_in_date_fkey");
             });
 
             modelBuilder.Entity<Role>(entity =>
@@ -422,6 +396,10 @@ namespace HospiTec_Server.DBModels
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("staff_name_fkey");
             });
+
+            OnModelCreatingPartial(modelBuilder);
         }
+
+        partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
     }
 }

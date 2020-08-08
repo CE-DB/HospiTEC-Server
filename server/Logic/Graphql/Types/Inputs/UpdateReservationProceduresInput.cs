@@ -6,16 +6,16 @@ using System.Threading.Tasks;
 
 namespace HospiTec_Server.Logic.Graphql.Types.Inputs
 {
-    public class UpdateReservationInput
+    public class UpdateReservationProceduresInput
     {
         [GraphQLNonNullType]
         public string patientId { get; set; }
         [GraphQLNonNullType]
-        public DateTime oldCheckInDate { get; set; }
-        public DateTime? newCheckInDate { get; set; } = null;
-        [GraphQLNonNullType(IsElementNullable = false, IsNullable = true)]
+        public DateTime checkInDate { get; set; }
+        [GraphQLNonNullType]
+        public bool icu { get; set; }
         public ICollection<string> newProcedures { get; set; } = null;
         [GraphQLNonNullType(IsElementNullable = false, IsNullable = true)]
-        public ICollection<string> oldProcedures { get; set; } = null;
+        public ICollection<string> deletedProcedures { get; set; } = null;
     }
 }

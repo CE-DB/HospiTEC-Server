@@ -1,5 +1,4 @@
-﻿using HospiTec_Server.DBModels;
-using HospiTec_Server.Logic.Graphql.Types;
+﻿using HospiTec_Server.Logic.Graphql.Types;
 using HospiTec_Server.Logic.Graphql.Types.Inputs;
 using HotChocolate;
 using HotChocolate.Execution;
@@ -14,6 +13,9 @@ using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using HotChocolate.AspNetCore.Authorization;
+using HospiTec_Server.database;
+using HospiTec_Server.database.DBModels;
+using MongoDB.Bson;
 
 namespace HospiTec_Server.Logic.Graphql
 {
@@ -2443,6 +2445,354 @@ namespace HospiTec_Server.Logic.Graphql
             }
 
             return m;
+        }
+
+        [GraphQLType(typeof(ReservationType))]
+        public async Task<Reservation> createReservation(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] AddReservationInput input)
+        {
+            List<IError> errors = new List<IError>();
+
+            if (string.IsNullOrEmpty(input.patientId))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_ID",
+                    "You must provide a valid ID."));
+            }
+
+            if (db.Reservation
+                .Any(p => p.Identification.Equals(input.patientId)
+                          && (p.CheckOutDate.Value.CompareTo(input.checkInDate) > 0 
+                             || p.CheckOutDate.Value.CompareTo(input.checkInDate) == 0)))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_CHECK_IN_DATE",
+                    "You have a reservation active in this date, " +
+                    "please insert a date after the check out date in the active reservation"));
+            }
+
+            if (errors.Count > 0) throw new QueryException(errors);
+
+            Reservation p = new Reservation
+            {
+                Identification = input.patientId,
+                CheckInDate = input.checkInDate
+            };
+
+            try
+            {
+                db.Reservation.Add(p);
+                await db.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                if (ex.GetBaseException() is PostgresException pgException)
+                {
+                    switch (pgException.SqlState)
+                    {
+                        case "23505":
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "This reservation already exists."));
+
+                        case "22001":
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "Some of values inserted are too long."));
+
+                        case "23503":
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "The patient doesn't exists."));
+
+                        default:
+                            throw new QueryException(CustomErrorBuilder(
+                                pgException,
+                                "Unknown error"));
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            return await db.Reservation
+                .Where(p => p.Identification.Equals(input.patientId)
+                            && p.CheckInDate.Equals(input.checkInDate))
+                .FirstOrDefaultAsync();
+        }
+
+        [GraphQLType(typeof(ReservationType))]
+        public async Task<Reservation> createProcedureReserved(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] AddProcedureReservedInput input)
+        {
+            List<IError> errors = new List<IError>();
+
+            if (string.IsNullOrEmpty(input.patientId))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_ID",
+                    "You must provide a valid ID."));
+            }
+
+            if (string.IsNullOrEmpty(input.name))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_PROCEDURE_NAME",
+                    "You must provide a valid procedure name."));
+            }
+
+            if (errors.Count > 0) throw new QueryException(errors);
+
+            try
+            {
+                await db.Database
+                    .ExecuteSqlRawAsync("CALL create_procedure_for_reservation({0}, {1}::Date, {2}, {3});",
+                    input.patientId,
+                    input.checkInDate.ToString("yyyy-MM-dd"),
+                    input.icu, 
+                    input.name);
+            }
+            catch (PostgresException pgException)
+            {
+                switch (pgException.SqlState)
+                {
+                    case "23505":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "This procedure is already attached to reservation."));
+
+                    case "22001":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Some of values inserted are too long."));
+
+                    case "23503":
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "The procedure specified doesn't exists."));
+
+                    default:
+                        throw new QueryException(CustomErrorBuilder(
+                            pgException,
+                            "Unknown error"));
+                }
+            }
+            catch (Exception e)
+            {
+                throw new QueryException(CustomErrorBuilder(
+                                e.GetType().ToString(),
+                                e.Message));
+            }
+
+            return await db.Reservation
+                .Where(p => p.Identification.Equals(input.patientId)
+                            && p.CheckInDate.Equals(input.checkInDate))
+                .FirstOrDefaultAsync();
+        }
+
+        [GraphQLType(typeof(ReservationType))]
+        public async Task<Reservation> updateReservationProcedures(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] UpdateReservationProceduresInput input)
+        {
+            List<IError> errors = new List<IError>();
+
+            if (string.IsNullOrEmpty(input.patientId))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_ID",
+                    "You must provide a valid ID."));
+            }
+
+            if (errors.Count > 0) throw new QueryException(errors);
+
+            if (input.deletedProcedures != null)
+            {
+                foreach (string j in input.deletedProcedures)
+                {
+                    try
+                    {
+                        await db.Database
+                            .ExecuteSqlRawAsync("CALL delete_procedure_for_reservation({0}, {1}::Date, {2});",
+                            input.patientId,
+                            input.checkInDate.ToString("yyyy-MM-dd"),
+                            j);
+                    }
+                    catch (PostgresException pgException)
+                    {
+                        switch (pgException.SqlState)
+                        {
+                            case "22001":
+
+                                errors.Add(CustomErrorBuilder(
+                                    pgException,
+                                    "Some of values inserted are too long."));
+                                break;
+
+                            case "P0001":
+
+                                errors.Add(CustomErrorBuilder(
+                                    pgException,
+                                    "The procedure '{0}' doesn't exists.", j));
+                                break;
+
+                            case "23505":
+
+                                errors.Add(CustomErrorBuilder(
+                                    pgException,
+                                    "The procedure '{0}' is already attached to reservation.", j));
+                                break;
+
+                            default:
+
+                                errors.Add(CustomErrorBuilder(
+                                    pgException,
+                                    "Unknown error"));
+                                break;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        errors.Add(CustomErrorBuilder(
+                                    e.GetType().ToString(),
+                                    e.Message));
+                    }
+                }
+            }
+
+            if (input.newProcedures != null)
+            {
+                foreach (string j in input.newProcedures)
+                {
+                    try
+                    {
+                        await db.Database
+                            .ExecuteSqlRawAsync("CALL create_procedure_for_reservation({0}, {1}::Date, {2}, {3});",
+                            input.patientId,
+                            input.checkInDate.ToString("yyyy-MM-dd"),
+                            input.icu,
+                            j);
+                    }
+                    catch (PostgresException pgException)
+                    {
+                        switch (pgException.SqlState)
+                        {
+
+                            case "22001":
+
+                                errors.Add(CustomErrorBuilder(
+                                    pgException,
+                                    "Some of values inserted are too long."));
+                                break;
+
+                            case "P0001":
+
+                                errors.Add(CustomErrorBuilder(
+                                    pgException,
+                                    "The procedure '{0}' doesn't exists.", j));
+                                break;
+
+                            default:
+
+                                errors.Add(CustomErrorBuilder(
+                                    pgException,
+                                    "Unknown error"));
+                                break;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+
+                        errors.Add(CustomErrorBuilder(
+                                    e.GetType().ToString(),
+                                    e.Message));
+                    }
+                }
+            }
+
+            if (errors.Count > 0) throw new QueryException(errors);
+
+            return await db.Reservation
+                .Where(p => p.Identification.Equals(input.patientId)
+                            && p.CheckInDate.Equals(input.checkInDate))
+                .FirstOrDefaultAsync();
+        }
+
+        [GraphQLType(typeof(ReservationType))]
+        public async Task<Reservation> updateReservationCheckInDate(
+            [Service] hospitecContext db,
+            [GraphQLNonNullType] UpdateReservationCheckInDate input)
+        {
+            List<IError> errors = new List<IError>();
+
+            if (string.IsNullOrEmpty(input.patientId))
+            {
+                errors.Add(CustomErrorBuilder(
+                    "INVALID_ID",
+                    "You must provide a valid ID."));
+            }
+
+            try
+            {
+                await db.Database
+                    .ExecuteSqlRawAsync("CALL update_reserved_check_in_date({0}, {1}::Date, {2}::Date, {3});",
+                    input.patientId,
+                    input.oldCheckInDate.ToString("yyyy-MM-dd"),
+                    input.newCheckInDate,
+                    input.icu);
+            }
+            catch (PostgresException pgException)
+            {
+                switch (pgException.SqlState)
+                {
+                    case "22001":
+
+                        errors.Add(CustomErrorBuilder(
+                            pgException,
+                            "Some of values inserted are too long."));
+                        break;
+
+                    case "23505":
+
+                        errors.Add(CustomErrorBuilder(
+                            pgException,
+                            "There is another reservation with this check in date"));
+                        break;
+
+                    case "P0001":
+
+                        errors.Add(CustomErrorBuilder(
+                            pgException,
+                            pgException.Message));
+                        break;
+
+                    default:
+
+                        errors.Add(CustomErrorBuilder(
+                            pgException,
+                            "Unknown error"));
+                        break;
+                }
+            }
+            catch (Exception e)
+            {
+                errors.Add(CustomErrorBuilder(
+                            e.GetType().ToString(),
+                            e.Message));
+            }
+
+            if (errors.Count > 0) throw new QueryException(errors);
+
+            return await db.Reservation
+                .Where(p => p.Identification.Equals(input.patientId)
+                            && p.CheckInDate.Equals(input.newCheckInDate))
+                .FirstOrDefaultAsync();
         }
     }
 }

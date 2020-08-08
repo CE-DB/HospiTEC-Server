@@ -4,7 +4,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
-using HospiTec_Server.DBModels;
 using Microsoft.EntityFrameworkCore;
 using HotChocolate;
 using System;
@@ -14,6 +13,8 @@ using HospiTec_Server.Logic.Graphql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using HospiTec_Server.database;
+using HospiTec_Server.database.DBModels;
 
 namespace HospiTec_Server
 {
@@ -92,6 +93,9 @@ namespace HospiTec_Server
             services
               .AddDbContext<CotecModels.CoTEC_DBContext>(options =>
                 options.UseSqlServer(Configuration.GetConnectionString("sqlserver")));
+
+            services
+                .AddSingleton<MongoDatabase>();
 
             services
                 .AddDataLoaderRegistry()

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace HospiTec_Server.DBModels
+namespace HospiTec_Server.database.DBModels
 {
-    public  class MedicalRoom
+    public partial class MedicalRoom
     {
         public MedicalRoom()
         {
@@ -16,6 +16,6 @@ namespace HospiTec_Server.DBModels
         public short Capacity { get; set; }
         public string CareType { get; set; }
 
-        public  ICollection<Bed> Bed { get; set; }
+        public virtual ICollection<Bed> Bed { get; set; }
     }
 }

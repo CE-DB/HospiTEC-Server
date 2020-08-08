@@ -6,14 +6,14 @@ using System.Threading.Tasks;
 
 namespace HospiTec_Server.Logic.Graphql.Types.Inputs
 {
-    public class AddProcedureReservedInput
+    public class UpdateReservationCheckInDate
     {
-        [GraphQLNonNullType]
-        public string name { get; set; }
         [GraphQLNonNullType]
         public string patientId { get; set; }
         [GraphQLNonNullType]
-        public DateTime checkInDate { get; set; }
+        public DateTime oldCheckInDate { get; set; }
+        [GraphQLNonNullType]
+        public DateTime newCheckInDate { get; set; }
         [GraphQLNonNullType]
         public bool icu { get; set; }
     }

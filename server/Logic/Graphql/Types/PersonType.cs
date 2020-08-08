@@ -1,4 +1,4 @@
-﻿using HospiTec_Server.DBModels;
+﻿using HospiTec_Server.database.DBModels;
 using HotChocolate.Types;
 
 namespace HospiTec_Server.Logic.Graphql.Types
