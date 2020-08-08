@@ -74,7 +74,7 @@ namespace HospiTec_Server.database
 
     public class StaffEvaluation
     {
-        public string _id { get; set; }
+        public ObjectId _id { get; set; }
         public string patient_id { get; set; }
         public string staff_id { get; set; }
         public int evaluation { get; set; }
